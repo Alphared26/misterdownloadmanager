@@ -97,13 +97,15 @@
   addEventListener("auxclick", note, true);
 
   // Social media quick media detection & hook (TikTok, Instagram, Twitter/X)
-  const isSocialMedia = /instagram\.com|tiktok\.com|twitter\.com|x\.com|pinterest\.com/i.test(location.hostname);
+  const hostname = globalThis.location?.hostname || "";
+  const href = globalThis.location?.href || "";
+  const isSocialMedia = /instagram\.com|tiktok\.com|twitter\.com|x\.com|pinterest\.com/i.test(hostname);
   if (isSocialMedia) {
     tell({
       type: "socialPageLoaded",
-      url: location.href,
-      hostname: location.hostname,
-      title: document.title,
+      url: href,
+      hostname,
+      title: globalThis.document?.title || "",
     });
   }
 

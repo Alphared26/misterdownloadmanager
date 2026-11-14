@@ -457,6 +457,7 @@ shows what each one did.
 
 <!-- contributors:start (python tools/contributors.py readme) -->
 <p>
+<a href="https://github.com/Alphared26" title="Mayolus Gavin Alphared (Alphared26)"><img src="https://avatars.githubusercontent.com/u/94624300?v=4" width="48" height="48" alt="Alphared26"></a>
 <a href="https://github.com/AzureKnigh7" title="AzureKnigh7"><img src="art/contributors/azureknigh7.png" width="48" height="48" alt="AzureKnigh7"></a>
 <a href="https://github.com/specailm5" title="specailm5"><img src="art/contributors/specailm5.png" width="48" height="48" alt="specailm5"></a>
 <a href="https://github.com/osunday" title="osunday"><img src="art/contributors/osunday.png" width="48" height="48" alt="osunday"></a>

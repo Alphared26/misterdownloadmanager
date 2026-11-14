@@ -1162,7 +1162,7 @@ const MPD = (protect) => `<?xml version="1.0"?>
   assert.equal((await saved(given))[0], "Movie the title - FL262-1E01-4.mp4");
   assert.equal((await saved(bare))[0], "Movie the title.webm");
   // The popup's tag is the saved file's type (popup.js tagOf), its name the saved one (nameOf).
-  const popup = readFileSync(new URL("../../extension/popup.js", import.meta.url), "utf8");
+  const popup = readFileSync(new URL("../../extension/popup.js", import.meta.url), "utf8").replaceAll(String.fromCharCode(13, 10), String.fromCharCode(10));
   const part = (name) => popup.slice(popup.indexOf(`function ${name}(`), popup.indexOf("\n}\n", popup.indexOf(`function ${name}(`)) + 2);
   const shown = new Function(`const TYPES = {}; ${part("tagOf")}\n${part("nameOf")}\nreturn [tagOf, nameOf];`)();
   const [tagOf, nameOf] = shown;
@@ -1195,7 +1195,7 @@ const MPD = (protect) => `<?xml version="1.0"?>
   };
   assert.deepEqual([...vm.runInNewContext("SCRIPT_EXTENSIONS", ctx)], list("SCRIPT_EXTENSIONS"));
   assert.deepEqual([...vm.runInNewContext("PAGE_EXTENSIONS", ctx)], list("PAGE_EXTENSIONS"));
-  const video = readFileSync(new URL("../../extension/video.js", import.meta.url), "utf8");
+  const video = readFileSync(new URL("../../extension/video.js", import.meta.url), "utf8").replaceAll(String.fromCharCode(13, 10), String.fromCharCode(10));
   const scripts = JSON.parse(/const SCRIPT_EXTENSIONS = (\[[^\]]+\]);/.exec(video)[1]);
   assert.deepEqual(scripts, [...list("SCRIPT_EXTENSIONS"), ...list("PAGE_EXTENSIONS")], "video.js knows the same scripts and pages");
   // The button over a plain file says its type as the address says it: a script's file= value's,
@@ -1507,7 +1507,7 @@ const MPD = (protect) => `<?xml version="1.0"?>
 // video.js's videoPage, with what it calls (from it to its end mark), run against `location` and
 // `document`: the address the button hands the app for a <video>.
 const videoPageOn = (() => {
-  const source = readFileSync(new URL("../../extension/video.js", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../../extension/video.js", import.meta.url), "utf8").replaceAll(String.fromCharCode(13, 10), String.fromCharCode(10));
   const start = source.indexOf("function videoPage(v) {");
   const end = source.indexOf("// ---- the video's own address: end.");
   assert.ok(start > 0 && end > start, "video.js has videoPage and its end mark");
@@ -1840,7 +1840,7 @@ function samplePage(html) {
 // The qualities' menu (video.js; its plain functions run here): the questions' pace and their
 // minute, a row's text, and what a page can never make it do.
 {
-  const source = readFileSync(new URL("../../extension/video.js", import.meta.url), "utf8");
+  const source = readFileSync(new URL("../../extension/video.js", import.meta.url), "utf8").replaceAll(String.fromCharCode(13, 10), String.fromCharCode(10));
   // A function's own source (async with its keyword), by its braces.
   const fn = (name) => {
     let start = source.indexOf(`function ${name}(`);
@@ -2521,7 +2521,7 @@ const popupState = (listeners) =>
 // The codes agree end to end: the app's (mdm_ipc::capture::Declined::code), the extension's own
 // ("site-access"), and a popup text for each.
 {
-  const rust = readFileSync(new URL("../../crates/ipc/src/capture.rs", import.meta.url), "utf8");
+  const rust = readFileSync(new URL("../../crates/ipc/src/capture.rs", import.meta.url), "utf8").replaceAll(String.fromCharCode(13, 10), String.fromCharCode(10));
   const body = /pub fn code\(self\)[\s\S]*?\n    \}\n/.exec(rust)[0];
   const codes = [...body.matchAll(/=> "([a-z-]+)"/g)].map((m) => m[1]);
   assert.deepEqual(codes, ["integration-off", "browser", "file-type", "site", "address", "small"]);

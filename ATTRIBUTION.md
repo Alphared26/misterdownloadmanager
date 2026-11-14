@@ -22,6 +22,8 @@ The Luna, Aero and Aqua themes' icons (`crates/app/assets/themes/luna/icons/`, `
 `aqua/icons/`) were drawn for Mister Download Manager, as were the Metro, Adwaita and Breeze
 icons named MDM's own above; each set's `SOURCES.txt` lists them.
 
+The Futuristic theme (`crates/app/assets/themes/futuristic.toml`), UI/UX modernization specifications (`docs/UI_UX_SPEC.md`), and Next-Gen architecture (wallpaper contrast engine, floating HUD widget, social media extraction suite, and site crawler) were contributed by Mayolus Gavin Alphared ([@Alphared26](https://github.com/Alphared26)).
+
 The README's block icons (`docs/images/icons/`: arrow, globe, gift, magnet) were made for it
 with OpenAI's GPT-5 Image Mini by `tools/readme/icons.py`, given the app icon as the style to follow.
 
