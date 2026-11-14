@@ -17,6 +17,7 @@ pub mod proc;
 pub mod relay;
 pub mod resolve;
 pub mod servers;
+pub mod social;
 pub mod streams;
 // System helper discovery is for Linux and macOS; Windows keeps its verified managed copies.
 #[cfg(unix)]

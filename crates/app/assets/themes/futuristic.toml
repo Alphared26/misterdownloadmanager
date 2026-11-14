@@ -1,0 +1,164 @@
+# Futuristic: Mister Download Manager's sci-fi / cyberpunk HUD theme.
+# Inspired by high-contrast telemetry terminals, avionics displays, and cyberpunk interfaces.
+# Features obsidian canvas, neon cyan accent, crisp angular geometry, and high-visibility segment bars.
+
+name = "Futuristic"
+icons = "mono"
+icon-set = "metro"
+
+[controls]
+field-focus = "border"
+check = "square"
+button = "fluent"
+progress = "bar"
+scroll = "overlay"
+caption = "metro"
+focus = "frame"
+
+[sizes]
+radius = 2
+"radius.button" = 2
+"radius.part" = 1
+"radius.check" = 1
+"radius.flyout" = 4
+"radius.menu-item" = 2
+"radius.egui" = 2
+"radius.popup" = 4
+border = 1
+"focus-line" = 2
+"list.row" = 20
+"list.header" = 26
+
+[seeds.light]
+background = "#f4f7fb"
+surface = "#ffffff"
+header = "#e8eef7"
+text = "#0b132b"
+accent = "#0077b6"
+selection = "#0096c7"
+error = "#d00000"
+warning = "#e85d04"
+success = "#007f5f"
+
+[seeds.dark]
+background = "#080c14"
+surface = "#0d1524"
+header = "#0a101d"
+text = "#e2f1ff"
+accent = "#00f0ff"
+selection = "#005f73"
+error = "#ff0055"
+warning = "#ffb703"
+success = "#00ff9d"
+
+[light]
+# High-contrast sci-fi lab style for light mode.
+"button.accent" = "#0077b6"
+"button.accent.hot" = "#0288d1"
+"button.accent.pressed" = "#005f9e"
+"button.accent.bottom" = "#004b80"
+"button.accent.text" = "#ffffff"
+"button.accent.text.pressed" = "#f0f8ff"
+"button" = "#eef4fb"
+"button.border" = "#b0c4de"
+"button.bottom" = "#9fb6d0"
+"button.hot" = "#e1ecf8"
+"button.pressed" = "#d4e4f5"
+"field" = "#ffffff"
+"field.border" = "#9fb6d0"
+"field.bottom" = "#0077b6"
+"check.on" = "#0077b6"
+"check.on.hot" = "#0288d1"
+"check.on.pressed" = "#005f9e"
+"check.mark" = "#ffffff"
+"progress.bar" = "#0077b6"
+"progress.track" = "#dce6f2"
+"focus.ring" = "#0077b6"
+"selection.text" = "#ffffff"
+"tree.lines" = "#b0c4de"
+"chip.web" = "#e0f7f0"
+"chip.torrent" = "#e6f0fa"
+"chip.text" = "#0b132b"
+caption = "#0077b6"
+"caption.text" = "#ffffff"
+"caption.text.inactive" = "#b8d8f2"
+"caption.hot" = "#ffffff33"
+"caption.pressed" = "#00000033"
+
+[dark]
+# Cyberpunk neon telemetry interface for dark mode.
+"window" = "#080c14"
+"field" = "#0b121e"
+"field.border" = "#1b2c44"
+"field.bottom" = "#00f0ff"
+"field.readonly" = "#070c16"
+"field.readonly.border" = "#16253a"
+
+"button" = "#0f1c2e"
+"button.border" = "#203a5c"
+"button.bottom" = "#182e4a"
+"button.hot" = "#162a45"
+"button.pressed" = "#0b1626"
+"button.text" = "#e2f1ff"
+
+"button.accent" = "#00f0ff"
+"button.accent.hot" = "#33f3ff"
+"button.accent.pressed" = "#00c4d4"
+"button.accent.bottom" = "#009ea8"
+"button.accent.text" = "#050b14"
+"button.accent.text.pressed" = "#050b14"
+
+"check" = "#0b121e"
+"check.border" = "#203a5c"
+"check.on" = "#00f0ff"
+"check.on.hot" = "#33f3ff"
+"check.on.pressed" = "#00c4d4"
+"check.mark" = "#050b14"
+
+"progress.bar" = "#00f0ff"
+"progress.track" = "#101d2e"
+"meter.fill" = "#00ff9d"
+"meter.track" = "#101d2e"
+"meter.edge" = "#1b2c44"
+
+"focus.ring" = "#00f0ff"
+"selection" = "#005f73"
+"selection.text" = "#ffffff"
+"selection.inactive" = "#0e2336"
+
+"list" = "#080c14"
+"list.frame" = "#1b2c44"
+"list.grid" = "#0f1a29"
+"header" = "#0b121e"
+"header.line" = "#1b2c44"
+"header.sep" = "#16253a"
+"header.sorted" = "#122033"
+"header.sort-arrow" = "#00f0ff"
+
+"group.line" = "#1b2c44"
+"etch.shadow" = "#05080f"
+"etch.light" = "#1b2c44"
+"tab.page" = "#0d1524"
+"tab" = "#090e18"
+"tab.hot" = "#132035"
+
+"chip.web" = "#003b29"
+"chip.torrent" = "#102c4c"
+"chip.text" = "#e2f1ff"
+
+caption = "#060910"
+"caption.text" = "#00f0ff"
+"caption.text.inactive" = "#486581"
+"caption.hot" = "#00f0ff26"
+"caption.pressed" = "#00f0ff40"
+
+"reach.near" = "#00ff9d"
+"reach.medium" = "#ffb703"
+"reach.far" = "#ff0055"
+
+"tree.lines" = "#1b2c44"
+
+# 13-row sci-fi telemetry segment gradient: glowing cyan pulse
+"segments.missing" = "#101d2e"
+"segments.done" = "#00f0ff"
+"segments.start" = "#ff0055"

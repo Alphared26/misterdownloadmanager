@@ -1688,6 +1688,11 @@ button:focus-visible { outline: none; }
       // the post is the user's step ("Open post"; the menu's "All qualities…" still has the window).
       if (a.act !== "offer" && l.post && l.state === "failed") return showFlash({ kind: "warn", text: t("video_open_post") }, l);
       if (a.act !== "offer") return await useWindow(j);
+      // Direct resolution popup: show quick resolution & format options on the spot
+      if (!row && l && l.choices && l.choices.length > 0 && !menuOpen) {
+        openMenu();
+        return;
+      }
       const choices = l.choices;
       const i = row && Number.isInteger(row.choice) ? row.choice : choices.indexOf(bestOf(l));
       return await pick(j, l, Math.max(0, i));

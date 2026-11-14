@@ -5125,6 +5125,8 @@ menu	Metal draws with a software renderer	Metal draws with a software renderer
 #. menu command in the main window
 #. View → Theme: a style theme's name (Windows 8's flat look); keep "Metro" unless your language writes it otherwise
 menu	Metro	Metro
+#. View → Theme: futuristic sci-fi cyberpunk HUD theme
+menu	Futuristic	Futuristic
 #. menu command in the main window
 #. & marks the keyboard shortcut letter: keep one & before a letter of the translation
 menu	Mister Download Manager &Home Page	Mister Download Manager &Home Page

@@ -2418,6 +2418,29 @@ async function pageMessage(m, sender) {
     return { ok: Boolean(reply.ok) };
   }
   if (m.type === "options") return { ok: Boolean((await native({ openOptions: true })).ok) };
+  if (m.type === "socialPageLoaded") {
+    // Notify native host about social media context & cookies
+    const cookies = await ext.cookies.getAll({ url: m.url }).catch(() => []);
+    const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
+    await native({
+      socialContext: true,
+      url: m.url,
+      title: m.title,
+      hostname: m.hostname,
+      cookies: cookieHeader,
+    }).catch(() => {});
+    return { ok: true };
+  }
+  // Auto-refresh expired link listener
+  if (m.type === "refresh-expired-link" && m.sourceUrl) {
+    const tab = await ext.tabs.create({ url: m.sourceUrl, active: false });
+    setTimeout(async () => {
+      try {
+        await ext.tabs.remove(tab.id);
+      } catch {}
+    }, 15000);
+    return { ok: true };
+  }
   return { ok: false };
 }
 

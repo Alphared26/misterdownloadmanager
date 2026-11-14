@@ -953,6 +953,10 @@ These ship in a later version, when they're ready.
 
 ### Being built
 
+- 🔄 **Futuristic UI & Theme**: a new high-contrast sci-fi HUD theme (`Futuristic`), adaptive contrast guidelines, and modernized segment telemetries ([docs/UI_UX_SPEC.md](docs/UI_UX_SPEC.md))
+- 🔄 **Direct Video Resolution Popup**: instant resolution and audio format selection popup directly in the browser extension without waking the main window
+- 🔄 **Social Media Extraction Suite**: dedicated parsing and extraction for TikTok, Instagram, Twitter/X, and Pinterest via `mdm-tools` (`crates/tools/src/social.rs`)
+- 🔄 **Auto-Refresh Expired Links**: silent background tab listener to refresh expired download tokens and resume downloads seamlessly
 - 🔄 Linux, what's left ([#164](https://github.com/anefzaoui/misterdownloadmanager/issues/164)):
   screen readers (Orca) reading MDM's windows; browsers installed as a Flatpak (Firefox from
   Flathub may reach MDM through the desktop, as the Snap does: to check); native Wayland windows

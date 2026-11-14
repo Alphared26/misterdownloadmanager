@@ -622,7 +622,7 @@ pub static CLASSIC: Theme = Theme {
 /// (written out above), then the ones shipped as theme files (`assets/themes/`, in the format
 /// users write, so they double as examples). Native follows the system and is made when chosen
 /// (`crate::native`).
-pub fn builtins() -> [&'static Theme; 9] {
+pub fn builtins() -> [&'static Theme; 10] {
     static HIGH_CONTRAST: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
         crate::themefile::builtin(
             "high-contrast",
@@ -651,6 +651,12 @@ pub fn builtins() -> [&'static Theme; 9] {
     static EMERALD: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
         crate::themefile::builtin("emerald", include_str!("../assets/themes/emerald.toml"))
     });
+    static FUTURISTIC: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
+        crate::themefile::builtin(
+            "futuristic",
+            include_str!("../assets/themes/futuristic.toml"),
+        )
+    });
     [
         &CLASSIC,
         &HIGH_CONTRAST,
@@ -661,6 +667,7 @@ pub fn builtins() -> [&'static Theme; 9] {
         &AERO,
         &AQUA,
         &EMERALD,
+        &FUTURISTIC,
     ]
 }
 
@@ -867,6 +874,11 @@ mod tests {
                 "emerald",
                 "Emerald",
                 include_str!("../assets/themes/emerald.toml"),
+            ),
+            (
+                "futuristic",
+                "Futuristic",
+                include_str!("../assets/themes/futuristic.toml"),
             ),
         ] {
             let v: serde_json::Value = toml::from_str(text).unwrap();

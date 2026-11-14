@@ -95,6 +95,18 @@
   };
   addEventListener("click", note, true);
   addEventListener("auxclick", note, true);
+
+  // Social media quick media detection & hook (TikTok, Instagram, Twitter/X)
+  const isSocialMedia = /instagram\.com|tiktok\.com|twitter\.com|x\.com|pinterest\.com/i.test(location.hostname);
+  if (isSocialMedia) {
+    tell({
+      type: "socialPageLoaded",
+      url: location.href,
+      hostname: location.hostname,
+      title: document.title,
+    });
+  }
+
   globalThis.__mdmPage = {
     alive: () => Boolean(ext.runtime?.id),
     stop: () => {
