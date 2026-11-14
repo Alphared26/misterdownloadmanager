@@ -37,7 +37,7 @@ egui = "0.37.0"
 # The lock that keeps MDM's own clipboard reads and writes apart from egui's (main.rs, #629).
 egui-winit = { version = "0.37.0", default-features = false }
 egui_extras = { version = "0.37.0", features = ["svg", "image"] }
-image = { version = "0.25.10", default-features = false, features = ["png"] }
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "webp"] }
 dirs = "7.0.0"
 # Gzipped IP blocklists, read to convert them for librqbit (crates/torrent blocklist.rs).
 flate2 = "1.1.10"

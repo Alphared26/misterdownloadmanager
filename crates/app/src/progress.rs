@@ -845,6 +845,19 @@ impl Progress {
             );
             segment_bar(&p, lower, item, drawn.1);
             connections(ui, &p, lower, snap);
+            if crate::theme::selected() == "futuristic" {
+                let tele_rect = winui::r(lower, 17.0, 350.0, 513.0, 36.0);
+                let tele = crate::hud_progress::TelemetryData {
+                    speed_bps: item.rate.unwrap_or(0),
+                    latency_ms: None,
+                    retries: 0,
+                    country_code: None,
+                    server_name: item.url.host_str().unwrap_or("Server").to_string(),
+                    active_workers: snap.map(|s| s.segments.len()).unwrap_or(1),
+                    total_workers: 8,
+                };
+                crate::hud_progress::paint_telemetry_box(&p, tele_rect, &tele);
+            }
         }
         action
     }

@@ -259,6 +259,9 @@ enum Cmd {
     /// Queue right-click → Edit queue (its files) / Schedule; Delete; Create new queue.
     /// Tasks → Show drop target (shown / hidden); the drop target's Show main window.
     ToggleDropTarget,
+    ToggleHudWidget,
+    CommandPalette,
+    CustomWallpaper,
     ShowMain,
     /// Tasks → Export / Import (D-021): IDM's export file (.ef2) or a text file.
     Export {
@@ -931,6 +934,10 @@ pub struct App {
     checksums: Vec<crate::checksum::ChecksumDialog>,
     batch: Option<crate::batch::Batch>,
     video_dlg: Option<crate::videodlg::VideoDialog>,
+    /// Command Palette (Ctrl+K).
+    command_palette: crate::command_palette::CommandPalette,
+    /// Mini Floating Always-On-Top Desktop HUD Widget.
+    hud_widget: crate::hud_widget::HudWidget,
     /// The browser's quality menu's look-ups (videolookup.rs).
     lookups: crate::videolookup::Lookups,
     /// Download a gallery (#58).
@@ -1602,6 +1609,8 @@ impl App {
             checksums: Vec::new(),
             batch: None,
             video_dlg: None,
+            command_palette: Default::default(),
+            hud_widget: Default::default(),
             lookups: Default::default(),
             gallery_dlg: None,
             torrent_dlg: None,
@@ -6828,6 +6837,36 @@ impl App {
                 self.settings.drop_target = !self.settings.drop_target;
                 self.dirty = true;
             }
+            Cmd::ToggleHudWidget => {
+                self.hud_widget.toggle();
+                ctx.request_repaint();
+            }
+            Cmd::CommandPalette => {
+                self.command_palette.toggle();
+                ctx.request_repaint();
+            }
+            Cmd::CustomWallpaper => {
+                if let Some(path) = rfd::FileDialog::new()
+                    .set_title("Choose Wallpaper Image")
+                    .add_filter("Images", &["png", "jpg", "jpeg", "webp"])
+                    .pick_file()
+                {
+                    if let Ok(bytes) = std::fs::read(&path) {
+                        if let Ok(img) = image::load_from_memory(&bytes) {
+                            let rgba = img.to_rgba8();
+                            let (w, h) = (rgba.width() as usize, rgba.height() as usize);
+                            let mut cfg = crate::wallpaper::WallpaperConfig::default();
+                            cfg.enabled = true;
+                            cfg.path = path;
+                            let mut state = crate::wallpaper::WallpaperState::new(cfg);
+                            state.load_image(ctx, rgba.as_raw(), w, h);
+                            *crate::wallpaper::WALLPAPER_STATE.write().unwrap() = Some(state);
+                            crate::wallpaper::WALLPAPER_ENABLED.store(true, std::sync::atomic::Ordering::Relaxed);
+                            ctx.request_repaint();
+                        }
+                    }
+                }
+            }
             Cmd::ShowMain => self.show_window(ctx),
             Cmd::Export { ef2 } => self.export(ef2),
             Cmd::Import { ef2 } => self.import(ef2),
@@ -7251,6 +7290,18 @@ impl App {
                     true,
                     self.settings.drop_target,
                 ),
+                I(
+                    "Show &HUD Widget (Always-On-Top)",
+                    Cmd::ToggleHudWidget,
+                    true,
+                    self.hud_widget.is_visible(),
+                ),
+                I(
+                    "&Command Palette (Ctrl+K)...",
+                    Cmd::CommandPalette,
+                    true,
+                    false,
+                ),
                 Sep,
                 // i18n: verb: save the download list to a file
                 Sub(
@@ -7476,6 +7527,9 @@ impl App {
         items.push(Radio("Aqua", Cmd::Theme("aqua"), true, on("aqua")));
         // i18n: View → Theme: a style theme's name (a white canvas, emerald fills, 6-point corners), a name: keep "Emerald" as written
         items.push(Radio("Emerald", Cmd::Theme("emerald"), true, on("emerald")));
+        items.push(Radio("Futuristic", Cmd::Theme("futuristic"), true, on("futuristic")));
+        items.push(Sep);
+        items.push(I("Custom Wallpaper...", Cmd::CustomWallpaper, true, false));
         let wal = crate::themefile::PYWAL;
         for e in self.theme_list.iter().filter(|e| e.path.is_some()) {
             if !files {
@@ -10883,7 +10937,58 @@ impl App {
         crate::crash::step(crate::crash::Step::MainWindow);
         egui::CentralPanel::no_frame()
             .frame(egui::Frame::new().fill(chrome::WINDOW_BG()))
-            .show(ui, |ui| self.paint(ui));
+            .show(ui, |ui| {
+                crate::wallpaper::paint_wallpaper(ui, ui.max_rect());
+                self.paint(ui);
+            });
+
+        // Command Palette (Ctrl+K)
+        self.command_palette.check_shortcut(&ctx);
+        let downloads_summary: Vec<(u64, String, String)> = self
+            .items
+            .iter()
+            .map(|i| (i.id, i.name.clone(), format!("{:?}", i.category)))
+            .collect();
+        if let Some(action) = self.command_palette.ui(ui, &downloads_summary) {
+            match action {
+                crate::command_palette::PaletteAction::ResumeAll => {
+                    self.run(Cmd::StartQueue(0), None, &ctx);
+                }
+                crate::command_palette::PaletteAction::PauseAll => {
+                    self.run(Cmd::StopQueue(0), None, &ctx);
+                }
+                crate::command_palette::PaletteAction::SelectDownload(id) => {
+                    self.selection.set(id);
+                }
+                _ => {}
+            }
+        }
+
+        // HUD Widget Always-On-Top
+        if self.hud_widget.is_visible() {
+            let active_cnt = self.items.iter().filter(|i| i.live.is_some()).count();
+            let tele = crate::hud_widget::WidgetTelemetry {
+                download_speed_bps: 1024 * 512,
+                upload_speed_bps: 0,
+                active_downloads: active_cnt,
+                total_progress: self.overall_progress().unwrap_or(0.0),
+                is_idle: active_cnt == 0,
+            };
+            if let Some(wact) = self.hud_widget.show(&ctx, &tele) {
+                match wact {
+                    crate::hud_widget::HudWidgetAction::OpenMainWindow => {
+                        self.show_window(&ctx);
+                    }
+                    crate::hud_widget::HudWidgetAction::ToggleWidget => {
+                        self.hud_widget.toggle();
+                    }
+                    crate::hud_widget::HudWidgetAction::DroppedPath(path) => {
+                        self.dropped(vec![path], &ctx);
+                    }
+                }
+            }
+        }
+
         crate::crash::step(crate::crash::Step::Dialogs);
         self.dialogs(&ctx);
         crate::crash::frame_end();
