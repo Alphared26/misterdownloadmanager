@@ -64,7 +64,7 @@ impl CommandPalette {
         }
 
         let mut chosen_action = None;
-        let screen_rect = ui.ctx().input(|i| i.screen_rect());
+        let screen_rect = ui.ctx().input(|i| i.viewport().inner_rect).unwrap_or_else(|| ui.max_rect());
         let p = ui.painter();
 
         // Dark modal overlay backdrop

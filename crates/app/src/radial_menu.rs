@@ -122,7 +122,7 @@ impl RadialMenu {
         // Draw sectors
         for (i, sec) in sectors.iter().enumerate() {
             let is_hovered = self.hovered_sector == Some(i);
-            let fill_color = if is_hovered {
+            let _fill_color = if is_hovered {
                 Color32::from_rgba_unmultiplied(sec.color.r(), sec.color.g(), sec.color.b(), 240)
             } else {
                 Color32::from_rgba_unmultiplied(13, 21, 36, 210)
