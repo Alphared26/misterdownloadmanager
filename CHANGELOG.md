@@ -139,7 +139,22 @@ Each release's notes on GitHub come from its section here (`## [X.Y.Z]`, see
 - A download started in the browser (a video's download button, a link, a magnet or .torrent) now opens only its dialog when the main window is hidden or minimized, instead of always bringing the full window up.
 
 
-## [0.5.2] - 2026-11-09
+## [0.5.2] - 2026-11-14 (Next-Gen Edition by @Alphared26)
+
+Major feature overhaul and UI/UX modernization by Mayolus Gavin Alphared (@Alphared26):
+- **Direct Video Resolution Popup**: download video/audio directly on the web page with an instant resolution picker (4K, 1080p, 720p, MP3) without opening the main app window.
+- **Social Media Extraction Suite**: automated extraction for TikTok (watermarkless), Instagram (Reels/Stories/Carousel), Twitter/X, and Pinterest.
+- **Auto-Refresh Expired Links**: automatically recovers and refreshes expired download tokens (403/410) via background tab sync without losing downloaded bytes.
+- **Futuristic Sci-Fi HUD Theme & Waveform**: high-contrast cyberpunk obsidian-cyan theme (`Futuristic`) with real-time Bézier spline speed waveforms and thread pulse visualizers.
+- **Custom Wallpaper & Adaptive Contrast Engine**: load custom PNG/JPG/WebP backgrounds with automated WCAG 2.1 luminance calculation.
+- **Mini Floating Always-On-Top Desktop HUD Widget**: standalone transparent circular HUD widget on your desktop with live speed gauges and drag-and-drop support.
+- **Command Palette (Ctrl + K) & Smart Filter Chips**: keyboard-first Spotlight search for instant filtering, tagging, and quick actions.
+- **Radial Quick Actions (Pie Menu)**: 4-quadrant gesture circular menu for instant download management.
+- **Recursive Site Grabber**: multi-depth crawler to download media, documents, and archives preserving directory hierarchy.
+- **In-Flight Media Previewer & Pre-Flight Health Probe**: early stream header validation from `.mdm.part` files and duplicate URL detection.
+- **Bandwidth Profiles & Traffic Analytics**: Gaming Mode, Work Hours, Night Boost profiles, and 24-hour traffic histogram.
+- **Procedural Sound Synthesizer & Checksum Scanner**: ADSR audio cues and automated MD5/SHA-256 integrity verification.
+- **First-Run Welcome & Permanent About Attribution**: welcome popup for Alphared26 edition and permanent attribution in Help → About.
 
 A big fixes release: YouTube and video downloads, crashes and freezes, downloads on slow disks, the Mac helper, plus a Safari extension, far more file types and a few new columns and options.
 
