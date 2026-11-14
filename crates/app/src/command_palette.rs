@@ -64,7 +64,7 @@ impl CommandPalette {
         }
 
         let mut chosen_action = None;
-        let screen_rect = ui.ctx().screen_rect();
+        let screen_rect = ui.ctx().input(|i| i.screen_rect());
         let p = ui.painter();
 
         // Dark modal overlay backdrop
@@ -76,7 +76,7 @@ impl CommandPalette {
 
         // Frame
         p.rect_filled(pal_rect, 4.0, Color32::from_rgb(13, 21, 36));
-        p.rect_stroke(pal_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(0, 240, 255)));
+        p.rect_stroke(pal_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(0, 240, 255)), egui::StrokeKind::Inside);
 
         // Items list
         let mut items = vec![

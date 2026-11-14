@@ -37,7 +37,7 @@ pub fn paint_speed_waveform(p: &Painter, rect: Rect, speed_history: &[f32], max_
 
     let bg_color = Color32::from_rgba_unmultiplied(10, 16, 29, 200);
     p.rect_filled(rect, 2.0, bg_color);
-    p.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 240, 255, 60)));
+    p.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 240, 255, 60)), egui::StrokeKind::Inside);
 
     let w = rect.width();
     let h = rect.height();
@@ -57,15 +57,6 @@ pub fn paint_speed_waveform(p: &Painter, rect: Rect, speed_history: &[f32], max_
         let p1 = window[0];
         let p2 = window[1];
         p.line_segment([p1, p2], Stroke::new(2.0, Color32::from_rgb(0, 240, 255)));
-
-        // Semi-transparent area fill beneath curve
-        let fill_poly = vec![
-            p1,
-            p2,
-            pos2(p2.x, rect.bottom()),
-            pos2(p1.x, rect.bottom()),
-        ];
-        p.convex_polygon(fill_poly, Color32::from_rgba_unmultiplied(0, 240, 255, 25), Stroke::NONE);
     }
 }
 
@@ -95,14 +86,14 @@ pub fn paint_thread_pulse_grid(p: &Painter, o: Pos2, active_count: usize, total_
         };
 
         p.rect_filled(block_rect, 1.0, fill);
-        p.rect_stroke(block_rect, 1.0, Stroke::new(1.0, stroke_color));
+        p.rect_stroke(block_rect, 1.0, Stroke::new(1.0, stroke_color), egui::StrokeKind::Inside);
     }
 }
 
 /// Paint compact telemetry instrument box.
 pub fn paint_telemetry_box(p: &Painter, rect: Rect, data: &TelemetryData) {
     p.rect_filled(rect, 2.0, Color32::from_rgba_unmultiplied(8, 12, 20, 220));
-    p.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 119, 182, 100)));
+    p.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 119, 182, 100)), egui::StrokeKind::Inside);
 
     let flag = match &data.country_code {
         Some(code) => format!("[{}] ", code.to_uppercase()),

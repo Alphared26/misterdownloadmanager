@@ -78,7 +78,7 @@ impl HudWidget {
         let vid = ViewportId::from_hash_of(WIDGET_TITLE);
         let builder = ViewportBuilder::default()
             .with_title(WIDGET_TITLE)
-            .with_always_on_top(true)
+            .with_always_on_top()
             .with_decorations(false)
             .with_transparent(true)
             .with_inner_size(vec2(WIDGET_WIDTH, WIDGET_HEIGHT))
@@ -144,8 +144,9 @@ impl HudWidget {
 
             // Drop zone response
             for dropped in &ui.ctx().input(|i| i.raw.dropped_files.clone()) {
-                if let Some(path) = &dropped.path {
-                    action = Some(HudWidgetAction::DroppedPath(path.to_string_lossy().to_string()));
+                let path = dropped.path().display().to_string();
+                if !path.is_empty() {
+                    action = Some(HudWidgetAction::DroppedPath(path));
                 }
             }
         });

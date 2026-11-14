@@ -152,6 +152,10 @@ impl RadialMenu {
             Color32::from_rgb(255, 0, 85),
         );
 
+        if let Some(idx) = self.hovered_sector {
+            picked_action = Some(sectors[idx].action);
+        }
+
         picked_action
     }
 }
