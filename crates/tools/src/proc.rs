@@ -1936,7 +1936,11 @@ foreach ($d in $env:PATH.Split(';')) {
         cmd.arg("/C").arg(&parent);
         let mut s = spawn(cmd, "cmd").unwrap();
         let size = || std::fs::metadata(&marker).map_or(0, |m| m.len());
-        std::thread::sleep(Duration::from_secs(3));
+        let mut waited = 0;
+        while size() == 0 && waited < 12 {
+            std::thread::sleep(Duration::from_millis(500));
+            waited += 1;
+        }
         assert!(size() > 0, "the child runs");
         s.kill();
         std::thread::sleep(Duration::from_millis(1500));
