@@ -9,8 +9,8 @@ use std::sync::RwLock;
 use egui::{Color32, ColorImage, Context, Rect, TextureHandle, TextureOptions, Ui, vec2};
 use serde::{Deserialize, Serialize};
 
-static WALLPAPER_ENABLED: AtomicBool = AtomicBool::new(false);
-static WALLPAPER_STATE: RwLock<Option<WallpaperState>> = RwLock::new(None);
+pub static WALLPAPER_ENABLED: AtomicBool = AtomicBool::new(false);
+pub static WALLPAPER_STATE: RwLock<Option<WallpaperState>> = RwLock::new(None);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WallpaperConfig {

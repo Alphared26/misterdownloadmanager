@@ -848,7 +848,7 @@ impl Progress {
             if crate::theme::selected() == "futuristic" {
                 let tele_rect = winui::r(lower, 17.0, 350.0, 513.0, 36.0);
                 let tele = crate::hud_progress::TelemetryData {
-                    speed_bps: item.rate.unwrap_or(0),
+                    speed_bps: item.rate().unwrap_or(0),
                     latency_ms: None,
                     retries: 0,
                     country_code: None,

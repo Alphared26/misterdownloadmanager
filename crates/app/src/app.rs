@@ -10947,7 +10947,7 @@ impl App {
         let downloads_summary: Vec<(u64, String, String)> = self
             .items
             .iter()
-            .map(|i| (i.id, i.name.clone(), format!("{:?}", i.category)))
+            .map(|i| (i.id, i.file_name.clone(), format!("{:?}", i.category)))
             .collect();
         if let Some(action) = self.command_palette.ui(ui, &downloads_summary) {
             match action {
@@ -10971,7 +10971,7 @@ impl App {
                 download_speed_bps: 1024 * 512,
                 upload_speed_bps: 0,
                 active_downloads: active_cnt,
-                total_progress: self.overall_progress().unwrap_or(0.0),
+                total_progress: self.overall_progress().unwrap_or(0.0) as f32,
                 is_idle: active_cnt == 0,
             };
             if let Some(wact) = self.hud_widget.show(&ctx, &tele) {
