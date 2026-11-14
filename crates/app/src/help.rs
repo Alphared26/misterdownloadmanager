@@ -795,6 +795,28 @@ impl About {
                 ) {
                     support();
                 }
+                // Next-Gen Edition permanent attribution
+                y += 20.0;
+                winui::paragraph(
+                    &p,
+                    o.x + 80.0,
+                    y,
+                    "Next-Gen Edition modified by Mayolus Gavin Alphared (@Alphared26)",
+                    winui::TEXT(),
+                    o.x + 404.0,
+                    12.0,
+                );
+                y += 16.0;
+                if winui::link(
+                    ui,
+                    &p,
+                    o.x + 80.0,
+                    y,
+                    "Alphared26 Fork Repository",
+                    "alphared_repo",
+                ) {
+                    crate::launch::open("https://github.com/Alphared26/misterdownloadmanager");
+                }
                 // The last row ends above OK (at 204 when it fits as planned).
                 crate::dialogs::grow_px(ui.ctx(), "about", y + 12.0 - (o.y + 194.0));
                 let ok = winui::button(

@@ -9746,6 +9746,14 @@ impl App {
         {
             self.helpers = None;
         }
+        // Next-Gen welcome dialog: shown once on first run.
+        if !self.settings.shown_alphared_welcome {
+            if matches!(crate::alphared_welcome::WelcomeDialog::show(ctx), Outcome::Closed) {
+                self.settings.shown_alphared_welcome = true;
+                self.dirty = true;
+                ctx.request_repaint();
+            }
+        }
         if let Some(q) = &mut self.shown_existing
             && !matches!(q.show(ctx), Outcome::Open)
         {

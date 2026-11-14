@@ -1,6 +1,7 @@
 #![windows_subsystem = "windows"]
 
 mod app;
+mod alphared_welcome;
 mod analytics;
 mod bandwidth_profile;
 mod batch;

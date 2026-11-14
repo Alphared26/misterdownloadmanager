@@ -137,6 +137,8 @@ pub struct Settings {
     pub language_asked: bool,
     /// The video helpers (yt-dlp, ffmpeg) have been offered once, at a start (helpers.rs).
     pub helpers_asked: bool,
+    /// Welcome dialog shown once on first run (Next-Gen edition by Alphared26).
+    pub shown_alphared_welcome: bool,
     /// The browser extension is offered at each start until a browser has it, unless "Don't ask
     /// again" was pressed (extension.rs).
     pub extension_never_ask: bool,
@@ -398,6 +400,7 @@ impl Default for Settings {
             language: None,
             language_asked: false,
             helpers_asked: false,
+            shown_alphared_welcome: false,
             extension_never_ask: false,
             clipboard_autostart: true,
             minimize_to_tray: true,
