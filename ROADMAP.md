@@ -957,6 +957,13 @@ These ship in a later version, when they're ready.
 - 🔄 **Direct Video Resolution Popup**: instant resolution and audio format selection popup directly in the browser extension without waking the main window
 - 🔄 **Social Media Extraction Suite**: dedicated parsing and extraction for TikTok, Instagram, Twitter/X, and Pinterest via `mdm-tools` (`crates/tools/src/social.rs`)
 - 🔄 **Auto-Refresh Expired Links**: silent background tab listener to refresh expired download tokens and resume downloads seamlessly
+- 🔄 **Custom Wallpaper & Adaptive Contrast Engine**: dynamic wallpaper background rendering with WCAG luminance calculations for automatic text/border contrast (`crates/app/src/wallpaper.rs`)
+- 🔄 **Mini Floating Always-On-Top HUD Widget**: standalone transparent viewport with circular download/upload speed gauges, active queue count, and drop-target (`crates/app/src/hud_widget.rs`)
+- 🔄 **Command Palette & Smart Filter Chips**: keyboard-first `Ctrl+K` Spotlight modal for fast search, bandwidth profile switching, and queue actions (`crates/app/src/command_palette.rs`)
+- 🔄 **In-Flight Media Previewer**: stream header verification on partial `.mdm.part` files for early audio/video playback (`crates/app/src/preview.rs`)
+- 🔄 **Recursive Site Grabber Engine**: depth-limited link and asset crawler with directory preservation (`crates/engine/src/crawler.rs`)
+- 🔄 **Link Health Probe & Anti-Duplicate Validator**: pre-flight link validation and canonical duplicate checking (`crates/engine/src/health_probe.rs`)
+- 🔄 **Post-Processing & Checksum Verifier**: automated post-download SHA-256/MD5 hash verification and archive password extraction pipeline (`crates/tools/src/post_process.rs`)
 - 🔄 Linux, what's left ([#164](https://github.com/anefzaoui/misterdownloadmanager/issues/164)):
   screen readers (Orca) reading MDM's windows; browsers installed as a Flatpak (Firefox from
   Flathub may reach MDM through the desktop, as the Snap does: to check); native Wayland windows

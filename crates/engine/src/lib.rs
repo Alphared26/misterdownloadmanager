@@ -2,11 +2,13 @@
 
 pub mod agent;
 mod browserlike;
+pub mod crawler;
 pub mod disk;
 pub mod dns;
 pub mod download;
 pub mod fault;
 pub mod ftp;
+pub mod health_probe;
 pub mod hosts;
 mod html;
 pub mod limiter;

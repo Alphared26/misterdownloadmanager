@@ -13,6 +13,7 @@ mod openpgp;
 pub mod pages;
 pub mod pieces;
 pub mod playlist;
+pub mod post_process;
 pub mod proc;
 pub mod relay;
 pub mod resolve;
