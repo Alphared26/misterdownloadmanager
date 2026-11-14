@@ -1,6 +1,8 @@
 #![windows_subsystem = "windows"]
 
 mod app;
+mod analytics;
+mod bandwidth_profile;
 mod batch;
 mod categories;
 mod checksum;
@@ -29,6 +31,7 @@ mod grabber;
 mod headless;
 mod help;
 mod helpers;
+mod hud_progress;
 mod hud_widget;
 mod i18n;
 mod icons;
@@ -48,6 +51,7 @@ mod progress;
 mod properties;
 mod queue;
 mod quota;
+mod radial_menu;
 mod regional;
 mod remote;
 mod renderer;
@@ -60,6 +64,7 @@ mod scrollbar;
 mod secrets;
 mod selection;
 mod settings;
+mod sound_synth;
 mod store;
 mod theme;
 mod themefile;

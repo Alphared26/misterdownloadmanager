@@ -38,6 +38,30 @@ pub const AVAILABLE: bool = cfg!(feature = "browser-connection");
 #[cfg_attr(not(feature = "browser-connection"), allow(dead_code))]
 const MAX_REDIRECTS: usize = 20;
 
+/// Cloudflare Turnstile / JS Challenge detection & handback context (#376, docs/UI_UX_SPEC.md).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CloudflareHandback {
+    pub url: String,
+    pub detected_turnstile: bool,
+    pub cf_clearance: Option<String>,
+}
+
+impl CloudflareHandback {
+    /// Detect if an HTTP response is a Cloudflare managed challenge or Turnstile block.
+    pub fn is_challenge(status: StatusCode, headers: &HeaderMap, body_snippet: &str) -> bool {
+        let is_cf_status = status == StatusCode::FORBIDDEN || status == StatusCode::SERVICE_UNAVAILABLE;
+        let is_cf_server = headers
+            .get("server")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|s| s.eq_ignore_ascii_case("cloudflare"));
+        let contains_turnstile = body_snippet.contains("challenges.cloudflare.com")
+            || body_snippet.contains("cf-turnstile")
+            || body_snippet.contains("_cf_chl_opt");
+
+        is_cf_status && (is_cf_server || contains_turnstile)
+    }
+}
+
 /// A browser-like client for one download (`Browser::new`).
 pub(crate) struct Browser {
     #[cfg(feature = "browser-connection")]

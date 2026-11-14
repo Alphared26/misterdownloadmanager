@@ -964,6 +964,12 @@ These ship in a later version, when they're ready.
 - 🔄 **Recursive Site Grabber Engine**: depth-limited link and asset crawler with directory preservation (`crates/engine/src/crawler.rs`)
 - 🔄 **Link Health Probe & Anti-Duplicate Validator**: pre-flight link validation and canonical duplicate checking (`crates/engine/src/health_probe.rs`)
 - 🔄 **Post-Processing & Checksum Verifier**: automated post-download SHA-256/MD5 hash verification and archive password extraction pipeline (`crates/tools/src/post_process.rs`)
+- 🔄 **Futuristic Progress Dialog (Waveform & Telemetry)**: dynamic Bézier spline speed waveform, multi-worker pulse grid, and telemetry instrument box (`crates/app/src/hud_progress.rs`)
+- 🔄 **Radial Quick Actions (Pie Menu)**: circular 4-quadrant gesture menu for fast download control (`crates/app/src/radial_menu.rs`)
+- 🔄 **Smart Bandwidth Profiles**: Gaming Mode, Work Hours, and Night Boost bandwidth throttle profiles (`crates/app/src/bandwidth_profile.rs`)
+- 🔄 **Download Analytics & Heatmap Dashboard**: historical bandwidth volume and domain throughput telemetry tracker (`crates/app/src/analytics.rs`)
+- 🔄 **Modern Sound Synthesizer**: procedural ADSR notification chimes replacing legacy audio files (`crates/app/src/sound_synth.rs`)
+- 🔄 **Cloudflare Handback & Bot Challenge Sync**: intelligent Turnstile/JS challenge detection with browser handback (`crates/engine/src/browserlike.rs`)
 - 🔄 Linux, what's left ([#164](https://github.com/anefzaoui/misterdownloadmanager/issues/164)):
   screen readers (Orca) reading MDM's windows; browsers installed as a Flatpak (Firefox from
   Flathub may reach MDM through the desktop, as the Snap does: to check); native Wayland windows
