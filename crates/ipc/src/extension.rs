@@ -3,7 +3,7 @@
 //! install it until one has).
 
 /// The extension's ID loaded unpacked (the public key in extension/manifest.json).
-pub const UNPACKED_ID: &str = "oogbclbbninliongijffeeggalppliok";
+pub const UNPACKED_ID: &str = "jhilkkiakihejbjnimjpemhofckekegl";
 /// Its ID in the Chrome Web Store, which signs it with the store's own key
 /// (tools/extension/pack.ps1 leaves the manifest's key out of the store's copy). [`store_id`] is
 /// `None` while this is not a valid ID (a placeholder), and then nothing names it.
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn store_and_unpacked_both_served() {
         assert_eq!(STORE_ID, "ejoleppdfgjdndddcjoehopknmlglojp");
-        assert_eq!(UNPACKED_ID, "oogbclbbninliongijffeeggalppliok");
+        assert_eq!(UNPACKED_ID, "jhilkkiakihejbjnimjpemhofckekegl");
         let ids = chromium_ids();
         assert!(
             ids.contains(&UNPACKED_ID) && ids.contains(&STORE_ID),

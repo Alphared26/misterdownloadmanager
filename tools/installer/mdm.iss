@@ -92,6 +92,7 @@ Source: "{#Bin}\misterdownloadmanager-mcp.exe"; DestDir: "{app}"; Flags: ignorev
 Source: "{#Root}\target\extension\chromium\*"; DestDir: "{app}\extension\chromium"; Flags: ignoreversion recursesubdirs
 Source: "{#Root}\target\extension\mdm-firefox.xpi"; DestDir: "{app}\extension"; Flags: ignoreversion
 Source: "{#Root}\install-extension.bat"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Root}\mdm_ext_public.pem"; DestDir: "{app}\extension"; Flags: ignoreversion
 Source: "{#Root}\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "{#Root}\ATTRIBUTION.md"; DestDir: "{app}"; DestName: "ATTRIBUTION.txt"; Flags: ignoreversion
 
@@ -120,6 +121,7 @@ Root: HKA; Subkey: "Software\Classes\magnet\shell\open\command"; ValueType: stri
 
 [Run]
 Filename: "{app}\{#HostExe}"; Parameters: "--register"; Flags: runhidden; Tasks: browser; Check: not IsAdminInstallMode
+Filename: "{app}\register-extension.ps1"; Flags: runhidden; Tasks: browser; Check: not IsAdminInstallMode
 Filename: "{app}\{#HostExe}"; Parameters: "--register --all-users"; Flags: runhidden; Tasks: browser; Check: IsAdminInstallMode
 Filename: "{app}\{#AppExe}"; Description: "{cm:Launch}"; Flags: nowait postinstall skipifsilent
 ; Update now in MDM runs this setup silently with /relaunch=1: MDM starts again once installed,

@@ -1475,7 +1475,7 @@ mod tests {
         let manifest = chromium_manifest(&this_program().unwrap());
         for id in [
             "ejoleppdfgjdndddcjoehopknmlglojp",
-            "oogbclbbninliongijffeeggalppliok",
+            "jhilkkiakihejbjnimjpemhofckekegl",
         ] {
             let o = format!("chrome-extension://{id}/");
             assert!(
