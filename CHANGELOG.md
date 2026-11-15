@@ -1763,3 +1763,5 @@ Manager users expect, with experimental builds for macOS and Linux.
   Edge, Brave, Vivaldi and Firefox, has its tray icon, follows the system's light or dark look and
   uses the system's fonts and ffmpeg. Tell us how they work for you.
 - **Help** opens the [user guide and tutorials](docs/README.md).
+
+<!-- nextgen-r2 -->
