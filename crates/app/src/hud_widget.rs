@@ -5,7 +5,10 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Instant;
 
-use egui::{Color32, Context, Pos2, Rect, Stroke, Vec2, ViewportBuilder, ViewportCommand, ViewportId, pos2, vec2};
+use egui::{
+    pos2, vec2, Color32, Context, Pos2, Rect, Stroke, Vec2, ViewportBuilder, ViewportCommand,
+    ViewportId,
+};
 
 pub const WIDGET_TITLE: &str = "Mister Download Manager HUD Widget";
 pub const WIDGET_WIDTH: f32 = 140.0;
@@ -131,7 +134,11 @@ impl HudWidget {
             );
 
             // Dragging & Interaction
-            let resp = ui.interact(rect, ui.scope_id().with("hud-interact"), egui::Sense::click_and_drag());
+            let resp = ui.interact(
+                rect,
+                ui.scope_id().with("hud-interact"),
+                egui::Sense::click_and_drag(),
+            );
             if resp.drag_started() {
                 ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
             }

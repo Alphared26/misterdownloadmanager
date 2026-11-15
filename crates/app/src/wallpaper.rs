@@ -3,8 +3,8 @@
 //! and adapts UI elements (frosted glass scrims, high-contrast text, glowing borders).
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::RwLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use egui::{Color32, ColorImage, Context, Rect, TextureHandle, TextureOptions, Ui, vec2};
 use serde::{Deserialize, Serialize};
@@ -67,9 +67,21 @@ impl WallpaperState {
                 let g = pixels[i + 1] as f64 / 255.0;
                 let b = pixels[i + 2] as f64 / 255.0;
 
-                let r_lin = if r <= 0.04045 { r / 12.92 } else { ((r + 0.055) / 1.055).powf(2.4) };
-                let g_lin = if g <= 0.04045 { g / 12.92 } else { ((g + 0.055) / 1.055).powf(2.4) };
-                let b_lin = if b <= 0.04045 { b / 12.92 } else { ((b + 0.055) / 1.055).powf(2.4) };
+                let r_lin = if r <= 0.04045 {
+                    r / 12.92
+                } else {
+                    ((r + 0.055) / 1.055).powf(2.4)
+                };
+                let g_lin = if g <= 0.04045 {
+                    g / 12.92
+                } else {
+                    ((g + 0.055) / 1.055).powf(2.4)
+                };
+                let b_lin = if b <= 0.04045 {
+                    b / 12.92
+                } else {
+                    ((b + 0.055) / 1.055).powf(2.4)
+                };
 
                 let lum = 0.2126 * r_lin + 0.7152 * g_lin + 0.0722 * b_lin;
                 sum_lum += lum;
@@ -77,7 +89,11 @@ impl WallpaperState {
             }
         }
 
-        let avg = if sampled > 0 { (sum_lum / sampled as f64) as f32 } else { 0.1 };
+        let avg = if sampled > 0 {
+            (sum_lum / sampled as f64) as f32
+        } else {
+            0.1
+        };
         let is_light = avg > 0.45;
         (avg, is_light)
     }
@@ -89,7 +105,8 @@ impl WallpaperState {
         self.is_light = is_light;
 
         let color_image = ColorImage::from_rgba_unmultiplied([width, height], raw_bytes);
-        self.texture = Some(ctx.load_texture("custom_wallpaper", color_image, TextureOptions::LINEAR));
+        self.texture =
+            Some(ctx.load_texture("custom_wallpaper", color_image, TextureOptions::LINEAR));
     }
 }
 

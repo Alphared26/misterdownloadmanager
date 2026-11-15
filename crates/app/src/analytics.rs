@@ -1,9 +1,9 @@
 //! Download Analytics & Traffic Heatmap Dashboard (docs/UI_UX_SPEC.md, #20).
 //! Aggregates bandwidth statistics, domain throughput rankings, and hourly transfer metrics.
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct DomainStat {
@@ -23,12 +23,19 @@ pub struct AnalyticsRecord {
 }
 
 impl AnalyticsRecord {
-    pub fn record_completed(&mut self, bytes: u64, domain: &str, avg_speed: u64, hour_of_day: usize) {
+    pub fn record_completed(
+        &mut self,
+        bytes: u64,
+        domain: &str,
+        avg_speed: u64,
+        hour_of_day: usize,
+    ) {
         self.total_bytes_downloaded = self.total_bytes_downloaded.saturating_add(bytes);
         self.completed_count += 1;
 
         if hour_of_day < 24 {
-            self.hourly_traffic_bytes[hour_of_day] = self.hourly_traffic_bytes[hour_of_day].saturating_add(bytes);
+            self.hourly_traffic_bytes[hour_of_day] =
+                self.hourly_traffic_bytes[hour_of_day].saturating_add(bytes);
         }
 
         let entry = self.domain_breakdown.entry(domain.to_lowercase()).or_default();

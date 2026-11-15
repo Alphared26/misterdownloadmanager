@@ -20,7 +20,10 @@ pub struct ChecksumResult {
 }
 
 /// Compute SHA-256 hash of a completed downloaded file.
-pub fn verify_file_hashes(path: &Path, expected_hash: Option<&str>) -> std::io::Result<ChecksumResult> {
+pub fn verify_file_hashes(
+    path: &Path,
+    expected_hash: Option<&str>,
+) -> std::io::Result<ChecksumResult> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
 

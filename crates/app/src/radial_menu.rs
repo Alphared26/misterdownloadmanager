@@ -117,7 +117,11 @@ impl RadialMenu {
         self.hovered_sector = hovered;
 
         // Outer glow circle
-        p.circle_filled(self.center, outer_r + 2.0, Color32::from_rgba_unmultiplied(0, 240, 255, 40));
+        p.circle_filled(
+            self.center,
+            outer_r + 2.0,
+            Color32::from_rgba_unmultiplied(0, 240, 255, 40),
+        );
 
         // Draw sectors
         for (i, sec) in sectors.iter().enumerate() {
@@ -130,20 +134,29 @@ impl RadialMenu {
 
             let mid_angle = (sec.start_angle + sec.end_angle) / 2.0;
             let label_r = (inner_r + outer_r) / 2.0;
-            let label_pos = self.center + vec2(mid_angle.cos() * label_r, mid_angle.sin() * label_r);
+            let label_pos =
+                self.center + vec2(mid_angle.cos() * label_r, mid_angle.sin() * label_r);
 
             p.text(
                 label_pos,
                 egui::Align2::CENTER_CENTER,
                 sec.label,
                 egui::FontId::proportional(11.0),
-                if is_hovered { Color32::BLACK } else { Color32::WHITE },
+                if is_hovered {
+                    Color32::BLACK
+                } else {
+                    Color32::WHITE
+                },
             );
         }
 
         // Center cancel hub
         p.circle_filled(self.center, inner_r, Color32::from_rgb(8, 12, 20));
-        p.circle_stroke(self.center, inner_r, Stroke::new(1.5, Color32::from_rgb(0, 240, 255)));
+        p.circle_stroke(
+            self.center,
+            inner_r,
+            Stroke::new(1.5, Color32::from_rgb(0, 240, 255)),
+        );
         p.text(
             self.center,
             egui::Align2::CENTER_CENTER,

@@ -2,9 +2,9 @@
 //! Displays modification notice and GitHub repository for Mayolus Gavin Alphared (@Alphared26)
 //! while honoring the original author's copyright (Ahmed Nefzaoui) under GNU General Public License v3.0.
 
-use egui::{Color32, Context};
 use crate::dialogs::{Outcome, window};
 use crate::winui::{self, ButtonKind, r};
+use egui::{Color32, Context};
 
 pub struct WelcomeDialog;
 

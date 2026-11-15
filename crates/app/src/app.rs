@@ -6861,7 +6861,8 @@ impl App {
                             let mut state = crate::wallpaper::WallpaperState::new(cfg);
                             state.load_image(ctx, rgba.as_raw(), w, h);
                             *crate::wallpaper::WALLPAPER_STATE.write().unwrap() = Some(state);
-                            crate::wallpaper::WALLPAPER_ENABLED.store(true, std::sync::atomic::Ordering::Relaxed);
+                            crate::wallpaper::WALLPAPER_ENABLED
+                                .store(true, std::sync::atomic::Ordering::Relaxed);
                             ctx.request_repaint();
                         }
                     }
@@ -7527,7 +7528,12 @@ impl App {
         items.push(Radio("Aqua", Cmd::Theme("aqua"), true, on("aqua")));
         // i18n: View → Theme: a style theme's name (a white canvas, emerald fills, 6-point corners), a name: keep "Emerald" as written
         items.push(Radio("Emerald", Cmd::Theme("emerald"), true, on("emerald")));
-        items.push(Radio("Futuristic", Cmd::Theme("futuristic"), true, on("futuristic")));
+        items.push(Radio(
+            "Futuristic",
+            Cmd::Theme("futuristic"),
+            true,
+            on("futuristic"),
+        ));
         items.push(Sep);
         items.push(I("Custom Wallpaper...", Cmd::CustomWallpaper, true, false));
         let wal = crate::themefile::PYWAL;
@@ -9802,7 +9808,10 @@ impl App {
         }
         // Next-Gen welcome dialog: shown once on first run.
         if !self.settings.shown_alphared_welcome {
-            if matches!(crate::alphared_welcome::WelcomeDialog::show(ctx), Outcome::Closed) {
+            if matches!(
+                crate::alphared_welcome::WelcomeDialog::show(ctx),
+                Outcome::Closed
+            ) {
                 self.settings.shown_alphared_welcome = true;
                 self.dirty = true;
                 ctx.request_repaint();

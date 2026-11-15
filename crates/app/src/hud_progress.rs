@@ -37,7 +37,12 @@ pub fn paint_speed_waveform(p: &Painter, rect: Rect, speed_history: &[f32], max_
 
     let bg_color = Color32::from_rgba_unmultiplied(10, 16, 29, 200);
     p.rect_filled(rect, 2.0, bg_color);
-    p.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 240, 255, 60)), egui::StrokeKind::Inside);
+    p.rect_stroke(
+        rect,
+        2.0,
+        Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 240, 255, 60)),
+        egui::StrokeKind::Inside,
+    );
 
     let w = rect.width();
     let h = rect.height();
@@ -61,7 +66,13 @@ pub fn paint_speed_waveform(p: &Painter, rect: Rect, speed_history: &[f32], max_
 }
 
 /// Paint multi-worker connection thread pulse grid.
-pub fn paint_thread_pulse_grid(p: &Painter, o: Pos2, active_count: usize, total_count: usize, pulse_phase: f32) {
+pub fn paint_thread_pulse_grid(
+    p: &Painter,
+    o: Pos2,
+    active_count: usize,
+    total_count: usize,
+    pulse_phase: f32,
+) {
     let block_w = 14.0;
     let block_h = 10.0;
     let gap = 3.0;
@@ -86,14 +97,24 @@ pub fn paint_thread_pulse_grid(p: &Painter, o: Pos2, active_count: usize, total_
         };
 
         p.rect_filled(block_rect, 1.0, fill);
-        p.rect_stroke(block_rect, 1.0, Stroke::new(1.0, stroke_color), egui::StrokeKind::Inside);
+        p.rect_stroke(
+            block_rect,
+            1.0,
+            Stroke::new(1.0, stroke_color),
+            egui::StrokeKind::Inside,
+        );
     }
 }
 
 /// Paint compact telemetry instrument box.
 pub fn paint_telemetry_box(p: &Painter, rect: Rect, data: &TelemetryData) {
     p.rect_filled(rect, 2.0, Color32::from_rgba_unmultiplied(8, 12, 20, 220));
-    p.rect_stroke(rect, 2.0, Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 119, 182, 100)), egui::StrokeKind::Inside);
+    p.rect_stroke(
+        rect,
+        2.0,
+        Stroke::new(1.0, Color32::from_rgba_unmultiplied(0, 119, 182, 100)),
+        egui::StrokeKind::Inside,
+    );
 
     let flag = match &data.country_code {
         Some(code) => format!("[{}] ", code.to_uppercase()),
@@ -106,7 +127,10 @@ pub fn paint_telemetry_box(p: &Painter, rect: Rect, data: &TelemetryData) {
     };
 
     let line1 = format!("SERVER: {flag}{}", data.server_name);
-    let line2 = format!("PING: {lat} | RETRIES: {} | THREADS: {}/{}", data.retries, data.active_workers, data.total_workers);
+    let line2 = format!(
+        "PING: {lat} | RETRIES: {} | THREADS: {}/{}",
+        data.retries, data.active_workers, data.total_workers
+    );
 
     p.text(
         pos2(rect.left() + 6.0, rect.top() + 4.0),

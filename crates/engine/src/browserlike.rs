@@ -49,7 +49,8 @@ pub struct CloudflareHandback {
 impl CloudflareHandback {
     /// Detect if an HTTP response is a Cloudflare managed challenge or Turnstile block.
     pub fn is_challenge(status: StatusCode, headers: &HeaderMap, body_snippet: &str) -> bool {
-        let is_cf_status = status == StatusCode::FORBIDDEN || status == StatusCode::SERVICE_UNAVAILABLE;
+        let is_cf_status =
+            status == StatusCode::FORBIDDEN || status == StatusCode::SERVICE_UNAVAILABLE;
         let is_cf_server = headers
             .get("server")
             .and_then(|v| v.to_str().ok())

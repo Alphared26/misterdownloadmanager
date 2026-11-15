@@ -58,17 +58,28 @@ impl CommandPalette {
     }
 
     /// Render the modal overlay in the main window.
-    pub fn ui(&mut self, ui: &mut Ui, available_downloads: &[(u64, String, String)]) -> Option<PaletteAction> {
+    pub fn ui(
+        &mut self,
+        ui: &mut Ui,
+        available_downloads: &[(u64, String, String)],
+    ) -> Option<PaletteAction> {
         if !self.open {
             return None;
         }
 
         let mut chosen_action = None;
-        let screen_rect = ui.ctx().input(|i| i.viewport().inner_rect).unwrap_or_else(|| ui.max_rect());
+        let screen_rect = ui
+            .ctx()
+            .input(|i| i.viewport().inner_rect)
+            .unwrap_or_else(|| ui.max_rect());
         let p = ui.painter();
 
         // Dark modal overlay backdrop
-        p.rect_filled(screen_rect, 0.0, Color32::from_rgba_unmultiplied(0, 0, 0, 160));
+        p.rect_filled(
+            screen_rect,
+            0.0,
+            Color32::from_rgba_unmultiplied(0, 0, 0, 160),
+        );
 
         // Center Palette Window (600x380 px)
         let pal_size = vec2(600.0, 380.0);
@@ -76,7 +87,12 @@ impl CommandPalette {
 
         // Frame
         p.rect_filled(pal_rect, 4.0, Color32::from_rgb(13, 21, 36));
-        p.rect_stroke(pal_rect, 4.0, Stroke::new(1.0, Color32::from_rgb(0, 240, 255)), egui::StrokeKind::Inside);
+        p.rect_stroke(
+            pal_rect,
+            4.0,
+            Stroke::new(1.0, Color32::from_rgb(0, 240, 255)),
+            egui::StrokeKind::Inside,
+        );
 
         // Items list
         let mut items = vec![

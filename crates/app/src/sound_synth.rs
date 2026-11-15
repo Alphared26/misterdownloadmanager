@@ -19,8 +19,8 @@ impl SynthTone {
     pub fn generate(kind: CueKind, sample_rate: u32) -> Self {
         let (duration_sec, start_freq, end_freq) = match kind {
             CueKind::DownloadComplete => (0.35, 523.25, 1046.5), // C5 to C6 pleasant ascending chime
-            CueKind::DownloadFailed => (0.40, 311.13, 207.65),   // Eb4 to Ab3 soft descending warning
-            CueKind::QueueStarted => (0.15, 659.25, 880.0),      // E5 to A5 brief confirmation blip
+            CueKind::DownloadFailed => (0.40, 311.13, 207.65), // Eb4 to Ab3 soft descending warning
+            CueKind::QueueStarted => (0.15, 659.25, 880.0), // E5 to A5 brief confirmation blip
         };
 
         let total_samples = (duration_sec * sample_rate as f32) as usize;
