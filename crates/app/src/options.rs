@@ -42,9 +42,10 @@ enum Sub {
     Panels(bool, bool, String, String),
     /// General → Keys...: (also take the files the browser would open).
     Keys(bool),
-    /// Downloads → Customize "Download progress" dialog → Edit... (#1041): (show it when a
-    /// download starts).
-    Progress(bool),
+    /// Downloads → Customize "Download progress" dialog → Edit... (#1041): (show the full
+    /// progress window when a download starts; keep it above every other window; show this fork's
+    /// mini pop-up; the mini style: speedometer, ring, bar).
+    Progress(bool, bool, u8),
     /// General → Test browser integration...: the checks, read beside the window (#1218) when it
     /// opened, and again once a Set it up finished.
     Test(crate::extension::Tester),
@@ -302,7 +303,13 @@ impl OptionsDialog {
                 )))
             }
             "account" => self.sub = Some(Sub::Account(AccountEdit::default())),
-            "progress" => self.sub = Some(Sub::Progress(self.s.show_progress)),
+            "progress" => {
+                self.sub = Some(Sub::Progress(
+                    self.s.show_progress,
+                    self.s.mini_popup,
+                    self.s.mini_style,
+                ))
+            }
             _ => {}
         }
         self
@@ -1258,7 +1265,11 @@ impl OptionsDialog {
         )
         .clicked()
         {
-            self.sub = Some(Sub::Progress(self.s.show_progress));
+            self.sub = Some(Sub::Progress(
+                self.s.show_progress,
+                self.s.mini_popup,
+                self.s.mini_style,
+            ));
         }
         let s = &mut self.s;
         winui::checkbox_light(
@@ -2891,6 +2902,24 @@ impl OptionsDialog {
                 play_sound(&self.s.sounds[i].1);
             }
         }
+        // This fork (a gap of IDM's): a program to run when a download finishes, the finished
+        // file's path as its argument — an antivirus scanner, a converter, anything. Below the
+        // sounds, with its own group.
+        group(
+            ui,
+            o,
+            25.0,
+            398.0,
+            383.0,
+            56.0,
+            // i18n: Options → Sounds: a program to run when a download finishes (a gap of IDM's)
+            "When a download finishes, run",
+        );
+        let rc = crate::winui::rect(Rect::from_min_size(
+            pos2(o.x + 35.0, o.y + 424.0),
+            vec2(373.0, 21.0),
+        ));
+        crate::winui::edit(ui, rc, &mut self.s.run_on_finish, true, false);
     }
 
     // ---- entry dialogs --------------------------------------------------------------------
@@ -3867,20 +3896,24 @@ impl OptionsDialog {
                     Outcome::Closed => {}
                 }
             }
-            Sub::Progress(mut shown) => {
+            Sub::Progress(mut shown, mut mini, mut style) => {
                 let out = window(
                     ctx,
                     "opt-progress",
                     // i18n: window title: Options → Downloads → Edit... (the progress window's settings)
                     "Download progress dialog",
-                    [400.0, 150.0],
+                    [400.0, 236.0],
                     false,
                     LIGHT_BG(),
-                    |ui, o| progress_dialog(ui, o, &mut shown),
+                    |ui, o| progress_dialog(ui, o, &mut shown, &mut mini, &mut style),
                 );
                 match out {
-                    Outcome::Open => self.sub = Some(Sub::Progress(shown)),
-                    Outcome::Done(()) => self.s.show_progress = shown,
+                    Outcome::Open => self.sub = Some(Sub::Progress(shown, mini, style)),
+                    Outcome::Done(()) => {
+                        self.s.show_progress = shown;
+                        self.s.mini_popup = mini;
+                        self.s.mini_style = style.min(2);
+                    }
                     Outcome::Closed => {}
                 }
             }
@@ -4629,7 +4662,13 @@ fn read_sites_file(path: &std::path::Path) -> std::io::Result<String> {
 
 /// Downloads → Customize "Download progress" dialog → Edit... (#1041): whether a download's
 /// progress window opens when it starts, and where to find it when it doesn't.
-fn progress_dialog(ui: &mut Ui, o: Pos2, shown: &mut bool) -> Outcome<()> {
+fn progress_dialog(
+    ui: &mut Ui,
+    o: Pos2,
+    shown: &mut bool,
+    mini: &mut bool,
+    style: &mut u8,
+) -> Outcome<()> {
     let p = ui.painter().clone();
     winui::checkbox_light(
         ui,
@@ -4646,10 +4685,54 @@ fn progress_dialog(ui: &mut Ui, o: Pos2, shown: &mut bool) -> Outcome<()> {
             "When it is off, downloads go on in the main window's list. Double-click one there to see its progress.",
         ),
         LIGHT_TEXT(),
-        o.x + 386.0,
+        o.x + 406.0,
         14.0,
     );
-    ok_cancel(ui, o, 232.0, 117.0, true)
+    winui::checkbox_light(
+        ui,
+        o + vec2(14.0, 92.0),
+        mini,
+        "Show the mini progress pop-up",
+        true,
+    );
+    winui::paragraph(
+        &p,
+        o.x + 14.0,
+        o.y + 130.0,
+        crate::i18n::t(
+            "A small gauge that stays above every other window shows the file name, download percentage, current speed and estimated time while you play a game or watch a film.",
+        ),
+        LIGHT_TEXT(),
+        o.x + 406.0,
+        14.0,
+    );
+    winui::text(
+        &p,
+        o.x + 14.0,
+        o.y + 166.0,
+        crate::i18n::t("Mini pop-up style:"),
+        LIGHT_TEXT(),
+    );
+    let at = (*style).min(2);
+    let speedometer = winui::radio_light(
+        ui,
+        o + vec2(130.0, 152.0),
+        at == 0,
+        "Speedometer",
+        *mini,
+    );
+    let ring = winui::radio_light(ui, o + vec2(250.0, 152.0), at == 1, "Ring", *mini);
+    let bar = winui::radio_light(ui, o + vec2(310.0, 152.0), at == 2, "Slim bar", *mini);
+    if let Some(i) = winui::radio_keys(ui, &[speedometer.clone(), ring.clone(), bar.clone()]) {
+        *style = i as u8;
+    } else if speedometer.clicked() {
+        *style = 0;
+    } else if ring.clicked() {
+        *style = 1;
+    } else if bar.clicked() {
+        *style = 2;
+    }
+    ok_cancel(ui, o, 252.0, 210.0, true)
 }
 
 fn ok_cancel(ui: &mut Ui, o: Pos2, x: f32, y: f32, valid: bool) -> Outcome<()> {
@@ -5328,7 +5411,7 @@ mod tests {
         });
         assert!(dlg.sub.is_none());
         click(&ctx, edit.center(), |ui| dlg.downloads(ui, Pos2::ZERO));
-        assert!(matches!(dlg.sub, Some(Sub::Progress(false))));
+        assert!(matches!(dlg.sub, Some(Sub::Progress(false, _, _))));
     }
 
     /// #1041: its check box turns the progress window off, and OK keeps it.
@@ -5336,17 +5419,19 @@ mod tests {
     fn the_download_progress_dialog_turns_the_window_off() {
         let ctx = context();
         let mut shown = true;
+        let mut mini = true;
+        let mut style = 0;
         let mut out = Outcome::Open;
         frame(&ctx, Vec::new(), |ui| {
-            out = progress_dialog(ui, Pos2::ZERO, &mut shown)
+            out = progress_dialog(ui, Pos2::ZERO, &mut shown, &mut mini, &mut style)
         });
         click(&ctx, pos2(20.0, 22.0), |ui| {
-            out = progress_dialog(ui, Pos2::ZERO, &mut shown);
+            out = progress_dialog(ui, Pos2::ZERO, &mut shown, &mut mini, &mut style);
         });
         assert!(!shown);
         assert!(matches!(out, Outcome::Open));
-        click(&ctx, pos2(268.0, 127.0), |ui| {
-            out = progress_dialog(ui, Pos2::ZERO, &mut shown);
+        click(&ctx, pos2(288.0, 220.0), |ui| {
+            out = progress_dialog(ui, Pos2::ZERO, &mut shown, &mut mini, &mut style);
         });
         assert!(matches!(out, Outcome::Done(())));
         assert!(!shown);

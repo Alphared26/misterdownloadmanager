@@ -77,6 +77,11 @@
     video_failed_lookup: "Could not look it up",
     video_tab_video: "Video",
     video_tab_audio: "Audio",
+    image_download: "Download photo",
+    image_download_orig: "Download original",
+    image_copy: "Copy photo link",
+    image_copied: "Link copied to clipboard",
+    image_tip: "Download high quality photo",
   };
   // Sizes as the browser's language writes them.
   const lang = ext.i18n.getUILanguage?.() || undefined;
@@ -366,12 +371,12 @@
   // page's own address instead).
   function nearest(v, read) {
     try {
-      for (let node = v, i = 0; node && i < 16; i += 1, node = upFrom(node)) {
+      for (let node = v, i = 0; node && i < 35; i += 1, node = upFrom(node)) {
         if (node.localName === "body" || node.localName === "html") break;
-        if (node !== v && (node.getAttribute?.("role") === "feed" || manyVideos(node))) break;
         const { sure, maybe } = read(node);
-        if (sure.size) return sure.size === 1 ? [...sure.values()][0] : null;
-        if (maybe.size) return maybe.size === 1 ? [...maybe.values()][0] : null;
+        if (sure && sure.size) return sure.size === 1 ? [...sure.values()][0] : null;
+        if (maybe && maybe.size) return maybe.size === 1 ? [...maybe.values()][0] : null;
+        if (node !== v && node.getAttribute?.("role") === "feed") break;
       }
     } catch {
       // Nothing named.
@@ -399,13 +404,172 @@
     return found;
   }
 
+  // Dedicated detectors for modern SPA feeds (Instagram, TikTok, Twitter/X, Facebook)
+  function findInstagramPostUrl(v) {
+    if (!v) return null;
+    const card = v.closest?.('article, [role="article"], [role="presentation"], section, div[class*="x1lliihq"]');
+    if (card) {
+      for (const a of card.querySelectorAll('a[href]')) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /(?:\/|^)(p|tv|reels?)\/(?!audio\/)([\w-]{5,})/.exec(href);
+        if (m) return `https://www.instagram.com/${m[1] === "tv" ? "p" : m[1].replace(/s$/, "")}/${m[2]}/`;
+      }
+    }
+    for (let node = v.parentElement, i = 0; node && i < 35; i += 1, node = node.parentElement) {
+      if (node.localName === 'body' || node.localName === 'html') break;
+      for (const a of node.querySelectorAll?.('a[href*="/p/"], a[href*="/reel/"], a[href*="/reels/"]') || []) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /(?:\/|^)(p|tv|reels?)\/(?!audio\/)([\w-]{5,})/.exec(href);
+        if (m) return `https://www.instagram.com/${m[1] === "tv" ? "p" : m[1].replace(/s$/, "")}/${m[2]}/`;
+      }
+    }
+    try {
+      const vr = v.getBoundingClientRect();
+      const vCenter = vr.top + vr.height / 2;
+      let bestDist = Infinity;
+      let bestUrl = null;
+      for (const a of document.querySelectorAll('a[href*="/p/"], a[href*="/reel/"], a[href*="/reels/"]')) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /(?:\/|^)(p|tv|reels?)\/(?!audio\/)([\w-]{5,})/.exec(href);
+        if (!m) continue;
+        const ar = a.getBoundingClientRect();
+        if (ar.width === 0 && ar.height === 0) continue;
+        const dist = Math.abs((ar.top + ar.height / 2) - vCenter);
+        if (dist < bestDist && dist < 1200) {
+          bestDist = dist;
+          bestUrl = `https://www.instagram.com/${m[1] === "tv" ? "p" : m[1].replace(/s$/, "")}/${m[2]}/`;
+        }
+      }
+      if (bestUrl) return bestUrl;
+    } catch {}
+    return null;
+  }
+
+  function findTikTokVideoUrl(v) {
+    if (!v) return null;
+    const item = v.closest?.('[data-e2e="feed-item"], div[class*="ItemContainer"], div[class*="DivItemContainer"], article');
+    if (item) {
+      for (const a of item.querySelectorAll('a[href*="/video/"], a[href*="/photo/"]')) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /\/@([\w.-]+)\/(video|photo)\/(\d+)/.exec(href);
+        if (m) return `https://www.tiktok.com/@${m[1]}/${m[2]}/${m[3]}`;
+      }
+      for (const el of [item, ...(item.querySelectorAll?.('[id^="xgwrapper-"]') || [])]) {
+        const m = /^xgwrapper-\d+-(\d{15,})$/.exec(el.getAttribute?.('id') || '');
+        if (m) return `https://www.tiktok.com/@_/video/${m[1]}`;
+      }
+    }
+    for (let node = v.parentElement, i = 0; node && i < 35; i += 1, node = node.parentElement) {
+      if (node.localName === 'body' || node.localName === 'html') break;
+      for (const a of node.querySelectorAll?.('a[href*="/video/"], a[href*="/photo/"]') || []) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /\/@([\w.-]+)\/(video|photo)\/(\d+)/.exec(href);
+        if (m) return `https://www.tiktok.com/@${m[1]}/${m[2]}/${m[3]}`;
+      }
+      const el = node.querySelector?.('[id^="xgwrapper-"]');
+      if (el) {
+        const m = /^xgwrapper-\d+-(\d{15,})$/.exec(el.getAttribute?.('id') || '');
+        if (m) return `https://www.tiktok.com/@_/video/${m[1]}`;
+      }
+    }
+    try {
+      const vr = v.getBoundingClientRect();
+      const vCenter = vr.top + vr.height / 2;
+      let bestDist = Infinity;
+      let bestUrl = null;
+      for (const a of document.querySelectorAll('a[href*="/video/"], a[href*="/photo/"]')) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /\/@([\w.-]+)\/(video|photo)\/(\d+)/.exec(href);
+        if (!m) continue;
+        const ar = a.getBoundingClientRect();
+        const dist = Math.abs((ar.top + ar.height / 2) - vCenter);
+        if (dist < bestDist && dist < 1200) {
+          bestDist = dist;
+          bestUrl = `https://www.tiktok.com/@${m[1]}/${m[2]}/${m[3]}`;
+        }
+      }
+      if (bestUrl) return bestUrl;
+    } catch {}
+    return null;
+  }
+
+  function findTwitterPostUrl(v) {
+    if (!v) return null;
+    const article = v.closest?.('article');
+    if (article) {
+      for (const a of article.querySelectorAll('a[href*="/status/"]')) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /^\/(\w{1,15}|i\/web)\/status\/(\d+)/.exec(new URL(href, location.href).pathname);
+        if (m) return `${location.origin}/${m[1]}/status/${m[2]}`;
+      }
+    }
+    for (let node = v.parentElement, i = 0; node && i < 35; i += 1, node = node.parentElement) {
+      if (node.localName === 'body' || node.localName === 'html') break;
+      for (const a of node.querySelectorAll?.('a[href*="/status/"]') || []) {
+        const href = a.getAttribute('href') || a.href || '';
+        const m = /^\/(\w{1,15}|i\/web)\/status\/(\d+)/.exec(new URL(href, location.href).pathname);
+        if (m) return `${location.origin}/${m[1]}/status/${m[2]}`;
+      }
+    }
+    return null;
+  }
+
+  function findFacebookPostUrl(v) {
+    if (!v) return null;
+    const check = (node) => {
+      for (const a of node.querySelectorAll?.('a[href]') || []) {
+        const href = a.getAttribute('href') || a.href || '';
+        const u = linkTo(href);
+        if (!u) continue;
+        const p = u.pathname;
+        let m;
+        if ((m = /^\/reel\/(\d+)/.exec(p))) return `https://www.facebook.com/reel/${m[1]}/`;
+        if ((m = /^\/share\/r\/(\w+)/.exec(p))) return `https://www.facebook.com/share/r/${m[1]}/`;
+        if ((m = /^\/share\/v\/(\w+)/.exec(p))) return `https://www.facebook.com/share/v/${m[1]}/`;
+        if (/^\/watch\/?$/.test(p) && /^\d+$/.test(u.searchParams.get("v") || "")) return `https://www.facebook.com/watch/?v=${u.searchParams.get("v")}`;
+        if (/^\/video\.php$/.test(p) && /^\d+$/.test(u.searchParams.get("v") || "")) return `https://www.facebook.com/watch/?v=${u.searchParams.get("v")}`;
+        if ((m = /^\/[^/]+\/videos\/(?:[^/]+\/)?(\d+)/.exec(p))) return `https://www.facebook.com/watch/?v=${m[1]}`;
+        if ((m = /^\/([^/]+)\/posts\/(pfbid\w+|\d+)/.exec(p))) return `https://www.facebook.com/${m[1]}/posts/${m[2]}`;
+      }
+      return null;
+    };
+    const article = v.closest?.('[role="article"], [data-pagelet*="FeedUnit"], div[class*="userContentWrapper"]');
+    if (article) {
+      const res = check(article);
+      if (res) return res;
+    }
+    for (let node = v.parentElement, i = 0; node && i < 35; i += 1, node = node.parentElement) {
+      if (node.localName === 'body' || node.localName === 'html') break;
+      const res = check(node);
+      if (res) return res;
+    }
+    return null;
+  }
+
   // The page's site without its www. or mobile host (old.reddit.com is reddit.com).
   const siteName = (host) => host.replace(/^(www|m|mobile|web|touch|old|new|sh|music|geo|player)\./, "");
 
   // A video's own address on this page, by site; the page's own when it is that one video's page;
   // null when the page is a feed, a list or a search and nothing names the video.
   function ownAddress(v, url) {
-    const site = SITES.find((s) => s.hosts.test(siteName(url.hostname)));
+    const h = siteName(url.hostname);
+    if (/instagram\.com$/.test(h)) {
+      const ig = findInstagramPostUrl(v);
+      if (ig) return ig;
+    }
+    if (/tiktok\.com$/.test(h)) {
+      const tt = findTikTokVideoUrl(v);
+      if (tt) return tt;
+    }
+    if (/(?:x|twitter)\.com$/.test(h)) {
+      const tw = findTwitterPostUrl(v);
+      if (tw) return tw;
+    }
+    if (/facebook\.com$/.test(h)) {
+      const fb = findFacebookPostUrl(v);
+      if (fb) return fb;
+    }
+    const site = SITES.find((s) => s.hosts.test(h));
     if (site) {
       // A site's own player in another page (an embed) is its video's page: its address holds
       // what the links around it may lack (a private video's key).
@@ -744,6 +908,10 @@
   // The chip: what one click gets ({text, hd}), a skeleton while the look-up runs, or nothing.
   function chipFor(look, t) {
     if (look && look.state === "pending") return { skeleton: true };
+    if (look && look.image) {
+      const text = [look.ext, look.dims].filter(Boolean).join(" ");
+      return { text: text || "JPG", hd: true };
+    }
     const c = bestOf(look);
     const text = c && (c.height || c.file || c.audio === true) ? qualityName(c, t) : "";
     return text ? { text, hd: (Number(c.height) || 0) >= 720 } : null;
@@ -887,56 +1055,43 @@
 :host { all: initial; }
 * { box-sizing: border-box; }
 .pill, .menu, .tip, .guide {
-  --go: #57cc5a; --go-hi: #47b94a; --go-ink: #08200b; --stamp: #1b7a26; --accent: #1b7a26;
-  --ok: #1b7a26; --warn: #8a5300; --err: #c42b1c; --warn-dot: #F7B500;
-  --bg: #fcfcfb; --bg2: #eef1f5; --bd: #c4ccd8; --tx: #111318; --tx2: #5f6676; --hov: rgba(87, 204, 90, .16);
-  --sh: 0 1px 2px rgba(17, 19, 24, .18), 0 6px 14px rgba(17, 19, 24, .18);
-  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans", sans-serif;
+  --go: #10b981; --go-hi: #059669; --go-ink: #ffffff; --stamp: #059669; --accent: #34d399;
+  --ok: #34d399; --warn: #fbbf24; --err: #f87171; --warn-dot: #f59e0b;
+  --bg: rgba(18, 22, 34, 0.92); --bg2: rgba(12, 16, 26, 0.96); --bd: rgba(255, 255, 255, 0.16); --tx: #ffffff; --tx2: #94a3b8; --hov: rgba(255, 255, 255, 0.12);
+  --sh: 0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui, sans-serif;
 }
-/* Windows (the system) in dark mode, not the page: MDM's navy board; the green stays. */
-@media (prefers-color-scheme: dark) {
-  .pill, .menu, .tip, .guide {
-    --accent: #7fe07f; --ok: #7fe07f; --warn: #ffd36b; --err: #ff99a4;
-    --bg: #0c1a33; --bg2: #081226; --bd: #2a3d63; --tx: #f2f5fb; --tx2: #b7c3da; --hov: rgba(87, 204, 90, .18);
-    --sh: 0 2px 4px rgba(0, 0, 0, .45), 0 8px 16px rgba(0, 0, 0, .45);
-  }
-}
-[dir="rtl"] { --font: "Segoe UI", "Segoe UI Variable Text", system-ui, -apple-system, Roboto, "Noto Sans Arabic", "Noto Sans", sans-serif; }
-/* The tab: a light raised frame at the video's edge; the Download part in green, the arrow and
-   the close (hide on this video) beside it, each its own square button. */
+[dir="rtl"] { --font: "Segoe UI", system-ui, -apple-system, Roboto, "Noto Sans Arabic", sans-serif; }
 .pill {
-  display: inline-flex; align-items: stretch; gap: 3px; height: 30px; padding: 2px;
-  background: linear-gradient(var(--bg), var(--bg2)); border: 1px solid var(--bd); border-radius: 5px;
+  display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 3px 5px;
+  background: var(--bg); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--bd); border-radius: 9999px;
   box-shadow: var(--sh); color: var(--tx);
-  font: 400 12px/1 var(--font); white-space: nowrap;
-  opacity: 0; transform: translateY(-2px);
-  transition: opacity .14s ease-out, transform .14s ease-out;
+  font: 500 12.5px/1 var(--font); white-space: nowrap;
+  opacity: 0; transform: translateY(-3px) scale(0.97);
+  transition: opacity .18s cubic-bezier(0.16, 1, 0.3, 1), transform .18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none; -webkit-user-select: none; touch-action: none;
 }
 .pill.shown { opacity: 1; transform: none; }
 button {
-  /* all: unset resets box-sizing too, past the rule above: without it a menu item's 100 % width
-     plus its padding ran past the menu's edge (#81). */
   all: unset; box-sizing: border-box; display: inline-flex; align-items: center;
   color: inherit; cursor: pointer; font: inherit;
 }
-.go { gap: 6px; padding-inline: 5px 9px; border-radius: 3px; cursor: grab; }
-.pill:not(.bare) .go { background: var(--go); color: var(--go-ink); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .14); }
-.pill:not(.bare) .go:hover { background: var(--go-hi); }
-.pill:not(.bare) .go .label { font-weight: 700; }
-.more, .x { width: 22px; justify-content: center; flex: none; color: var(--tx2);
-  border: 1px solid var(--bd); border-radius: 3px; background: var(--bg); }
-.more:hover, .x:hover, .more[aria-expanded="true"] { background: var(--hov); color: var(--tx); }
+.go { gap: 6px; padding-inline: 8px 12px; height: 26px; border-radius: 9999px; cursor: grab; transition: background .15s ease, transform .1s ease, box-shadow .15s ease; }
+.pill:not(.bare) .go { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35); }
+.pill:not(.bare) .go:hover { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); box-shadow: 0 3px 10px rgba(16, 185, 129, 0.5); transform: translateY(-0.5px); }
+.pill:not(.bare) .go:active { transform: translateY(0.5px); }
+.pill:not(.bare) .go .label { font-weight: 600; letter-spacing: 0.2px; text-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+.more, .x { width: 24px; height: 24px; border-radius: 50%; justify-content: center; flex: none; color: var(--tx2);
+  border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.08); transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.more:hover, .x:hover, .more[aria-expanded="true"] { background: rgba(255, 255, 255, 0.2); color: #ffffff; border-color: rgba(255, 255, 255, 0.25); }
 .more svg, .x svg { width: 10px; height: 10px; }
 .more[aria-expanded="true"] svg { transform: rotate(180deg); }
-/* The keyboard's ring: a dark one, outside the frame. */
-.pill:has(button:focus-visible) { outline: 2px solid var(--tx); outline-offset: 2px; }
+.pill:has(button:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 button:focus-visible { outline: none; }
-.more:focus-visible, .x:focus-visible, .act:focus-visible { box-shadow: 0 0 0 1px var(--tx) inset; }
-/* Its grip: there all along (the tab keeps its width: the arrow and ✕ never move from under the
-   pointer), seen while the pointer is on it. */
+.more:focus-visible, .x:focus-visible, .act:focus-visible { box-shadow: 0 0 0 1px var(--accent) inset; }
 .grip { display: grid; visibility: hidden; grid-template-columns: repeat(2, 2px); gap: 2px; align-content: center; padding-inline-start: 1px; }
-.grip i { display: block; width: 2px; height: 2px; border-radius: 1px; background: currentColor; opacity: .55; }
+.grip i { display: block; width: 2px; height: 2px; border-radius: 1px; background: currentColor; opacity: .65; }
 .pill:not(.bare):hover .grip, .pill.dragging .grip { visibility: visible; }
 .pill.bare .grip { display: none; }
 .icon { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; flex: none; }
@@ -947,48 +1102,43 @@ button:focus-visible { outline: none; }
 .pill[data-state="sending"] .icon .spin, .pill[data-state="sent"] .icon .i-sent,
 .pill[data-state="warn"] .icon .i-warn, .pill[data-state="err"] .icon .i-err,
 .pill[data-state="off"] .icon .i-off, .pill[data-state="drm"] .icon .i-drm { display: block; }
-.spin { width: 14px !important; height: 14px !important; border-radius: 50%; border: 2px solid rgba(8, 32, 11, .25); border-top-color: var(--go-ink);
+.spin { width: 14px !important; height: 14px !important; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); border-top-color: #ffffff;
   animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-.chip { font: 700 10.5px/15px var(--font); color: var(--go-ink); background: rgba(255, 255, 255, .55); border-radius: 3px; padding: 0 4px; }
-.chip.skel { width: 30px; height: 15px; padding: 0; background-size: 200% 100%;
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .8), rgba(255, 255, 255, .3));
+.chip { font: 700 10.5px/1 var(--font); color: #ffffff; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; padding: 2.5px 6px; }
+.chip.skel { width: 30px; height: 16px; padding: 0; background-size: 200% 100%;
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .5), rgba(255, 255, 255, .2));
   animation: shimmer 1.4s linear infinite; }
 .chip:empty:not(.skel), .sub:empty, .label:empty, .acts:empty { display: none; }
 .label { font-weight: 600; }
 .sub { color: var(--tx2); }
-/* A state says what happened in its own colour, on the frame (the green is for Download and
-   arrived only). */
 .pill[data-state="sent"] .label { color: var(--ok); }
 .pill[data-state="warn"] .label { color: var(--warn); }
 .pill[data-state="err"] .label { color: var(--err); }
 .pill[data-state="off"] .label, .pill[data-state="drm"] .label { color: var(--tx2); }
-.pill[data-state="sending"] .go { background: var(--go); color: var(--go-ink); }
+.pill[data-state="sending"] .go { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; }
 .pill[data-state="sending"] .label { font-weight: 700; }
-.acts { display: inline-flex; align-items: center; gap: 2px; padding-inline-end: 4px; }
-.act { font: 600 11.5px/1 var(--font); color: var(--accent); padding: 4px 6px; border-radius: 4px; }
+.acts { display: inline-flex; align-items: center; gap: 4px; padding-inline-end: 4px; }
+.act { font: 600 11.5px/1 var(--font); color: var(--accent); padding: 4px 8px; border-radius: 9999px; }
 .act:hover { background: var(--hov); }
-.act.fill { background: var(--go); color: var(--go-ink); }
-.act.fill:hover { background: var(--go-hi); }
-.pill.bare .go { cursor: default; padding-inline-end: 4px; }
+.act.fill { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; }
+.act.fill:hover { background: linear-gradient(135deg, #34d399 0%, #10b981 100%); }
+.pill.bare .go { cursor: default; padding-inline-end: 6px; }
 .pill.bare .more { display: none; }
-/* Small video, or words that wouldn't fit: the logo in green, the arrow, the close; a state keeps
-   its message and its main action. */
 .pill.compact .chip, .pill.compact .sub, .pill.compact .act:not(.fill) { display: none; }
 .pill.compact:not(.bare) .label { display: none; }
-.pill.compact:not(.bare) .go { padding-inline: 4px; }
+.pill.compact:not(.bare) .go { padding-inline: 6px; }
 .pill.dragging { cursor: grabbing; transition: none; transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, .25), 0 16px 32px rgba(0, 0, 0, .3); }
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5); }
 .pill.dragging .go { cursor: grabbing; }
-/* The hover tip: exactly what one click gets, and how to move it. */
-.tip { position: absolute; top: 36px; left: 0; max-width: 320px; width: max-content; padding: 6px 9px; border-radius: 6px;
+.tip { position: absolute; top: 40px; left: 0; max-width: 320px; width: max-content; padding: 7px 11px; border-radius: 10px;
   pointer-events: none; background: var(--bg); color: var(--tx); border: 1px solid var(--bd); box-shadow: var(--sh);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   font: 400 11.5px/1.45 var(--font); white-space: normal; display: none; }
 .tip.on { display: block; }
 .tip .what { display: block; font-weight: 600; }
 .tip .how { display: block; color: var(--tx2); }
-/* While dragging: the edge it slides along and the spots it snaps to. */
 .guide { position: absolute; left: 0; top: 0; display: none; pointer-events: none; }
 .guide.on { display: block; }
 .line { position: absolute; }
@@ -996,10 +1146,20 @@ button:focus-visible { outline: none; }
 .line.v { width: 0; border-inline-start: 1.5px dashed rgba(255, 255, 255, .75); }
 .snap { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
   border: 2px solid #fff; background: var(--go); }
-/* The list: paper white (MDM's navy board in dark mode), one line per quality. */
 .menu {
-  position: absolute; width: 318px; max-width: calc(100vw - 16px); padding: 4px; border-radius: 6px;
-  background: var(--bg); color: var(--tx); border: 1px solid var(--bd); box-shadow: var(--sh);
+  position: absolute; width: 318px; max-width: calc(100vw - 16px); padding: 6px; border-radius: 14px;
+  background: var(--bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  color: var(--tx); border: 1px solid var(--bd); box-shadow: var(--sh);
+  font: 400 12px/1.2 var(--font); display: none; white-space: nowrap;
+}
+.menu.open { display: block; }
+.menu:focus { outline: none; }
+.mh { display: flex; gap: 8px; align-items: center; padding: 6px 8px 7px; }
+.mh img { width: 18px; height: 18px; flex: none; }
+.mh .t { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.mh .s { display: block; color: var(--tx2); font-size: 11px; margin-top: 2px; }
+.hr { height: 1px; background: rgba(255, 255, 255, 0.12); margin: 5px 2px; }
+.cap { font: 600 10.5px/1 var(--font); color: var(--tx2); padding: 6px 8px 2px; letter-spacing: .2px; text-transform: uppercase; }
   font: 400 12px/1.2 var(--font); display: none; white-space: nowrap;
 }
 .menu.open { display: block; }
@@ -1168,7 +1328,7 @@ button:focus-visible { outline: none; }
   }
   // What the button sends for a video, and its look-up's key: what it plays (its blob:) when
   // nothing names it (#1092: what the tab played for it may still be offered); none without that.
-  const lookKey = (d) => (d.url === null ? (d.blob ? `played ${d.blob}` : null) : `${d.url} ${d.src}`);
+  const lookKey = (d) => (d.isImage ? `image ${d.src}` : d.url === null ? (d.blob ? `played ${d.blob}` : null) : `${d.url} ${d.src}`);
   // What download sends for the video now ({v, d, key}), kept a moment (the DOM walk is not free).
   let current = null;
   function describeNow(v) {
@@ -1182,6 +1342,16 @@ button:focus-visible { outline: none; }
   // one asked, or null.
   function lookOf(c) {
     if (!c || c.d.drm) return null;
+    if (c.d.isImage) {
+      return {
+        image: true,
+        file: true,
+        ext: c.d.ext || "JPG",
+        dims: c.d.dims,
+        choices: [{ label: `${c.d.ext || "JPG"}${c.d.dims ? " · " + c.d.dims : ""}`, approx: false }],
+        title: document.title,
+      };
+    }
     if (c.d.src && !STREAM.test(c.d.src)) return { file: true, height: c.v.videoHeight || 0, ext: fileType(c.d.src) };
     return (c.key && looks.get(c.key)) || null;
   }
@@ -1195,7 +1365,7 @@ button:focus-visible { outline: none; }
   // click or menu, for which one the app was too busy for before the click (other videos' early
   // look-ups running, #1053) is asked again rather than kept.
   function startLook(c, byUser = false) {
-    if (!c || !c.key || c.d.drm || (c.d.src && !STREAM.test(c.d.src))) return null;
+    if (!c || !c.key || c.d.isImage || c.d.drm || (c.d.src && !STREAM.test(c.d.src))) return null;
     const kept = looks.get(c.key);
     if (usable(kept) && !(byUser && kept.state === "busy")) return kept;
     const og = location.href === landedAt ? document.querySelector('meta[property="og:title"]')?.content : "";
@@ -1364,9 +1534,10 @@ button:focus-visible { outline: none; }
   function render() {
     const c = video ? describeNow(video) : null;
     const look = lookOf(c);
+    const isImg = video instanceof HTMLImageElement;
     const state = status ? status.state : c && c.d.drm ? "drm" : look && look.state === "pending" ? "looking" : "ready";
     pill.dataset.state = state;
-    let text = idleLabel;
+    let text = isImg ? (t("image_download") || "Download photo") : idleLabel;
     let small = "";
     let buttons = [];
     if (state === "drm") {
@@ -1398,7 +1569,11 @@ button:focus-visible { outline: none; }
     pill.classList.toggle("acting", buttons.length > 0);
     if (bare && menuOpen) closeMenu();
     go.setAttribute("aria-label", [text, small.replace(/^· /, ""), quality && quality.text].filter(Boolean).join(", "));
-    $(".tip .what").textContent = bare ? [text, small].filter(Boolean).join(" ") : tipFor(look, t, lang);
+    $(".tip .what").textContent = bare
+      ? [text, small].filter(Boolean).join(" ")
+      : isImg
+        ? (t("image_tip") || "Download high quality photo")
+        : tipFor(look, t, lang);
     // Its width with its words: compact or not follows from it and the video's.
     const was = pill.classList.contains("compact");
     pill.classList.remove("compact");
@@ -1454,6 +1629,124 @@ button:focus-visible { outline: none; }
     if (v.muted && v.loop && !v.controls && !(v.duration > CLIP_S)) return false;
     const s = getComputedStyle(v);
     return s.visibility !== "hidden" && s.display !== "none" && Number(s.opacity) > 0.05;
+  }
+
+  const MIN_IMG_W = 160;
+  const MIN_IMG_H = 140;
+
+  function eligibleImage(img) {
+    if (!img || !(img instanceof HTMLImageElement) || !img.isConnected || isDismissed(img)) return false;
+    const r = img.getBoundingClientRect();
+    if (r.width < MIN_IMG_W || r.height < MIN_IMG_H) return false;
+    if (img.naturalWidth > 0 && (img.naturalWidth < MIN_IMG_W || img.naturalHeight < MIN_IMG_H)) return false;
+    const src = img.currentSrc || img.src || "";
+    if (!src || src.startsWith("data:image/svg") || (src.startsWith("data:") && src.length < 500)) return false;
+    const cls = `${img.className || ""} ${img.id || ""} ${img.getAttribute("alt") || ""}`.toLowerCase();
+    if (/\b(?:avatar|icon|emoji|logo|badge|sprite|thumb-small|profile-photo)\b/.test(cls)) return false;
+    const s = getComputedStyle(img);
+    return s.visibility !== "hidden" && s.display !== "none" && Number(s.opacity) > 0.1;
+  }
+
+  function bestImageUrl(img) {
+    let url = img.currentSrc || img.src || "";
+    const h = location.hostname.toLowerCase();
+    if (h.includes("twitter.com") || h.includes("x.com") || url.includes("twimg.com")) {
+      try {
+        const u = new URL(url);
+        if (u.searchParams.has("name")) {
+          u.searchParams.set("name", "orig");
+          url = u.toString();
+        }
+      } catch {}
+      return url;
+    }
+    if (h.includes("pinterest.") || url.includes("pinimg.com")) {
+      url = url.replace(/\/(?:236|474|736)x\//, "/originals/");
+      return url;
+    }
+    if (img.srcset) {
+      const candidates = img.srcset.split(",").map((s) => s.trim().split(/\s+/));
+      let bestCandidate = null;
+      let maxW = 0;
+      for (const [candSrc, desc] of candidates) {
+        const w = parseInt(desc || "0", 10);
+        if (w > maxW) {
+          maxW = w;
+          bestCandidate = candSrc;
+        }
+      }
+      if (bestCandidate) url = bestCandidate;
+    }
+    return url;
+  }
+
+  function imageFilename(img, url) {
+    const h = location.hostname.replace(/^(www|m|mobile|web)\./, "");
+    const extMatch = url.split(/[?#]/)[0].match(/\.(jpg|jpeg|png|webp|avif|gif)$/i);
+    const ext = (extMatch ? extMatch[1] : "jpg").toLowerCase();
+    const time = Date.now().toString(36);
+    if (h.includes("instagram.com")) {
+      let code = "";
+      const m = location.pathname.match(/\/(?:p|reel)\/([\w-]+)/);
+      if (m) code = m[1];
+      else {
+        const postUrl = findInstagramPostUrl(img);
+        const pm = postUrl && postUrl.match(/\/(?:p|reel)\/([\w-]+)/);
+        if (pm) code = pm[1];
+      }
+      return `instagram_${code || time}.${ext}`;
+    }
+    if (h.includes("twitter.com") || h.includes("x.com")) {
+      const m = location.pathname.match(/\/status\/(\d+)/);
+      return `twitter_${m ? m[1] : time}.${ext}`;
+    }
+    if (h.includes("tiktok.com")) {
+      const m = location.pathname.match(/\/(?:video|photo)\/(\d+)/);
+      return `tiktok_${m ? m[1] : time}.${ext}`;
+    }
+    if (h.includes("facebook.com")) {
+      return `facebook_${time}.${ext}`;
+    }
+    const cleanTitle = (document.title || "").replace(/[^\w\s-]/g, "").trim().slice(0, 40).replace(/\s+/g, "_");
+    return cleanTitle ? `${cleanTitle}_${time}.${ext}` : `${h.split(".")[0]}_${time}.${ext}`;
+  }
+
+  function describeImage(img, r) {
+    const highRes = bestImageUrl(img);
+    const extMatch = highRes.split(/[?#]/)[0].match(/\.(jpg|jpeg|png|webp|avif|gif)$/i);
+    const ext = (extMatch ? extMatch[1] : "jpg").toUpperCase();
+    const dims = img.naturalWidth && img.naturalHeight ? `${img.naturalWidth}×${img.naturalHeight}` : "";
+    return {
+      isImage: true,
+      drm: false,
+      src: highRes,
+      blob: "",
+      url: location.href,
+      ext,
+      dims,
+      at: { x: r.left + r.width / 2, y: r.top + r.height / 2 },
+    };
+  }
+
+  function imageAt(x, y) {
+    if (typeof document.elementsFromPoint !== "function") return null;
+    const elements = document.elementsFromPoint(x, y) || [];
+    for (const el of elements) {
+      if (el === root || root.contains(el)) continue;
+      if (el instanceof HTMLImageElement && eligibleImage(el)) return el;
+      const img = el.querySelector?.("img");
+      if (img && eligibleImage(img)) {
+        const r = img.getBoundingClientRect();
+        if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return img;
+      }
+    }
+    return null;
+  }
+
+  function mediaAt(x, y) {
+    const v = videoAt(x, y);
+    if (v) return v;
+    return imageAt(x, y);
   }
 
   // The topmost eligible video under (x, y): players lay their controls over the video, so the
@@ -1659,7 +1952,7 @@ button:focus-visible { outline: none; }
     if (!attach()) return hide(true);
     root.style.setProperty("display", "block", "important");
     const c = describeNow(v);
-    if (!PRIVATE && !usable(looks.get(c.key))) scheduleLook(v);
+    if (!c.d.isImage && !PRIVATE && !usable(looks.get(c.key))) scheduleLook(v);
     if (pill.dataset.key !== String(c.key) || !fullWidth) {
       pill.dataset.key = String(c.key);
       render();
@@ -1693,6 +1986,7 @@ button:focus-visible { outline: none; }
 
   // What the button sends for `v` (its rectangle `r`): see `download`.
   function describe(v, r) {
+    if (v instanceof HTMLImageElement) return describeImage(v, r);
     const url = videoPage(v);
     // Its own plain file (not a stream the page assembles, blob:). Not beside a post a big site's
     // reader knows (#689): the app would take the file over the post, its title and qualities.
@@ -1724,7 +2018,8 @@ button:focus-visible { outline: none; }
     if (!video) return hide(true);
     if (hideFullscreen && document.fullscreenElement) return hide(true);
     const onButton = root.matches(":hover");
-    if (!video.isConnected || !eligible(video)) {
+    const ok = video.isConnected && (video instanceof HTMLImageElement ? eligibleImage(video) : eligible(video));
+    if (!ok) {
       if (!held && lastRect && !isDismissed(video)) held = hold();
       const r = held && held.r;
       const over =
@@ -1764,8 +2059,8 @@ button:focus-visible { outline: none; }
   function look() {
     scan = 0;
     if (dragging || never || (allowed === false && answered())) return;
-    // Kept on its video while its menu is open (pointerTarget).
-    const v = pointerTarget(videoAt(pointer.x, pointer.y), video, menuOpen);
+    // Kept on its media while its menu is open (pointerTarget).
+    const v = pointerTarget(mediaAt(pointer.x, pointer.y), video, menuOpen);
     if (!v) return;
     if (!answered()) return void ask().then(() => allowed && look());
     show(v);
@@ -1825,7 +2120,7 @@ button:focus-visible { outline: none; }
   // The pointer on the button (its main part or its menu's arrow): the look-up once it rests
   // there (resting); one that only passes over it asks nothing.
   pill.addEventListener("pointerenter", () => {
-    if (video && !PRIVATE) resting.rest(video);
+    if (video && !(video instanceof HTMLImageElement) && !PRIVATE) resting.rest(video);
   });
   pill.addEventListener("pointerleave", () => resting.leave());
 
@@ -1860,6 +2155,14 @@ button:focus-visible { outline: none; }
     try {
       closeMenu();
       tipOff();
+      if (video instanceof HTMLImageElement) {
+        const highRes = bestImageUrl(video);
+        const name = imageFilename(video, highRes);
+        setStatus({ state: "sending", text: t("video_sending") });
+        const r = await send({ type: "link", url: highRes, name, explicit: true });
+        if (r && r.gone) return;
+        return setStatus({ state: "sent", text: t("video_added"), sub: name }, 4000);
+      }
       // Asked now, not kept: one <video> plays many videos at the same address (a feed's
       // previews). A video gone from under the button: what it played then (#503).
       const d = held ? held.d : describe(video, video.getBoundingClientRect());
@@ -1990,6 +2293,33 @@ button:focus-visible { outline: none; }
     note.hidden = true;
     note.classList.remove("warn");
     note.replaceChildren();
+    if (video instanceof HTMLImageElement) {
+      const highRes = bestImageUrl(video);
+      const extMatch = highRes.split(/[?#]/)[0].match(/\.(jpg|jpeg|png|webp|avif|gif)$/i);
+      const ext = (extMatch ? extMatch[1] : "jpg").toUpperCase();
+      const dims = video.naturalWidth && video.naturalHeight ? `${video.naturalWidth}×${video.naturalHeight}` : "";
+
+      const b1 = document.createElement("button");
+      b1.type = "button";
+      b1.className = "row sel";
+      b1.tabIndex = -1;
+      b1.innerHTML = `<span class="q">${t("image_download_orig") || "Download original"}</span><span class="sz">${ext} ${dims}</span>`;
+      b1.addEventListener("click", () => download());
+      rows.append(b1);
+
+      const b2 = document.createElement("button");
+      b2.type = "button";
+      b2.className = "row";
+      b2.tabIndex = -1;
+      b2.innerHTML = `<span class="q">${t("image_copy") || "Copy photo link"}</span>`;
+      b2.addEventListener("click", () => {
+        closeMenu();
+        navigator.clipboard?.writeText(highRes);
+        setStatus({ state: "sent", text: t("image_copied") || "Link copied" }, 2500);
+      });
+      rows.append(b2);
+      return;
+    }
     const best = bestOf(look);
     if (look && look.file) {
       rows.append(topRow(best, { file: true }));

@@ -611,6 +611,9 @@ struct Cookies {
     /// The last run looked the YouTube page up with them, and anyone may watch the video: its
     /// streams refused may be the signed-in viewer's refusal.
     droppable: std::cell::Cell<bool>,
+    /// Only a signed-in viewer (a member, a private video, Premium) may watch it: its refusal is
+    /// final, so a server's 4xx never sends it to yt-dlp as a workaround (#686).
+    gated: std::cell::Cell<bool>,
 }
 
 impl Cookies {
@@ -711,6 +714,8 @@ fn supervise(
 ) {
     // The first run only: a run after it looks the page up afresh (links expire).
     let mut preloaded = preloaded;
+    // Once a server refuses MDM's own request, the rest of the run is yt-dlp's alone (#795).
+    let mut engine = engine;
     let mut ours = ours.to_vec();
     let mut dead: std::collections::BTreeSet<String> = Default::default();
     let mut looked_again = false;
@@ -818,6 +823,28 @@ fn supervise(
                     );
                     tracing::info!(
                         "YouTube refused a video's streams with the browser's cookies ({error}); trying without them"
+                    );
+                } else if !cookies.gated.get()
+                    && !proc::has_cookies(browser)
+                    && crate::streams::server_refused(&error)
+                {
+                    // The file's server refused MDM's own request, and there are no browser cookies
+                    // to hand it: let yt-dlp download the video instead (#795), getting whatever the
+                    // page itself wants (TikTok's challenge cookie, its own handshake). This branch
+                    // sits after the one above, so a video still droppable of its cookies tries that
+                    // first, as a private window would. A video only a signed-in viewer may watch (a
+                    // member's, a private one) is `gated` and never lands here: its refusal is final.
+                    // With the browser's cookies there is already something better to try — dropping
+                    // them, above — so this stays the no-cookies way in.
+                    engine = None;
+                    note(
+                        progress,
+                        format!(
+                            "{error}; yt-dlp downloads it itself: its server refused MDM's own request"
+                        ),
+                    );
+                    tracing::info!(
+                        "A video's server refused MDM's own request ({error}); yt-dlp downloads it"
                     );
                 } else if servers::format_unavailable(&error) && rerouted && !looked_again {
                     looked_again = true;
@@ -1443,6 +1470,7 @@ fn attempt(
     };
     // Looked up with the cookies, a YouTube video anyone may watch: refused streams may be the
     // signed-in viewer's (#686). Every run from here takes the arguments as decided.
+    cookies.gated.set(crate::youtube::signed_in_only(&info));
     cookies.droppable.set(
         !cookies.without.get()
             && proc::has_cookies(browser)

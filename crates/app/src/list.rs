@@ -242,6 +242,8 @@ pub struct ListState {
     /// Status keeps its default width, fitted to the list's font and the interface language on
     /// every frame ([`status_width`]), until someone resizes it.
     status_fits: bool,
+    /// When a wallpaper is on: the alpha to draw the list background with.
+    pub wallpaper_alpha: Option<u8>,
 }
 
 impl Default for ListState {
@@ -266,6 +268,7 @@ impl Default for ListState {
             menu_open: false,
             typed_at: 0.0,
             status_fits: true,
+            wallpaper_alpha: None,
         }
     }
 }
@@ -594,8 +597,23 @@ pub fn show(
         outer.right() - 1.0,
         outer.bottom() - 1.0,
     );
-    winui::solid(&p, screen(outer), FRAME());
-    fill(&p, l + 1.0, t + 1.0, r - 1.0, b - 1.0, BG());
+    if let Some(alpha) = st.wallpaper_alpha {
+        // With a wallpaper on: stroke the 1px frame rather than filling the entire outer rect,
+        // so the area under the list stays open to the picture underneath.
+        p.rect_stroke(
+            screen(outer),
+            0.0,
+            egui::Stroke::new(1.0, FRAME()),
+            egui::StrokeKind::Inside,
+        );
+        let [r_c, g_c, b_c, _] = BG().to_srgba_unmultiplied();
+        if alpha > 0 {
+            fill(&p, l + 1.0, t + 1.0, r - 1.0, b - 1.0, Color32::from_rgba_unmultiplied(r_c, g_c, b_c, alpha));
+        }
+    } else {
+        winui::solid(&p, screen(outer), FRAME());
+        fill(&p, l + 1.0, t + 1.0, r - 1.0, b - 1.0, BG());
+    }
     let (cl, ct, cr, cb) = (l + 2.0, t + 2.0, r - 2.0, b - 2.0);
     let font = winui::tahoma();
     // Status at its default width follows the font and the language (#736): a few words to
@@ -765,7 +783,15 @@ pub fn show(
     let cols = spans(st);
     let p_all = p.clone();
     let p = p.with_clip_rect(screen(header));
-    fill(&p, cl, ct, rr, ct + header_h() - 1.0, HEADER_BG());
+    let header_bg = match st.wallpaper_alpha {
+        Some(0) => Color32::from_rgba_unmultiplied(20, 20, 20, 40),
+        Some(a) => {
+            let [r_c, g_c, b_c, _] = HEADER_BG().to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r_c, g_c, b_c, a.saturating_add(40).min(180))
+        }
+        None => HEADER_BG(),
+    };
+    fill(&p, cl, ct, rr, ct + header_h() - 1.0, header_bg);
     for (c, x0, x1) in &cols {
         let hovered = hresp
             .hover_pos()
@@ -825,7 +851,7 @@ pub fn show(
                 SORT_ARROW().gamma_multiply(0.45)
             };
             if !roomy {
-                p.rect_filled(screen(fr), crate::theme::metrics().part_radius, HEADER_BG());
+                p.rect_filled(screen(fr), crate::theme::metrics().part_radius, header_bg);
             }
             funnel(&p, fr, color);
             if roomy {
@@ -1001,6 +1027,14 @@ pub fn show(
         }
     };
     expose_out_of_view(reach.start..reach.end.min(first));
+    let row_at = |pos: Pos2| -> Option<usize> {
+        if !body.contains(pos) || pos.x > last_right {
+            return None;
+        }
+        let idx = ((pos.y - body_top + shown_scroll) / row_h()).floor() as usize;
+        (idx < rows.len()).then_some(idx)
+    };
+    let hovered_row = resp.hover_pos().map(english).and_then(row_at);
     for k in 0..visible {
         let idx = first + k;
         let top = body_top + k as f32 * row_h() - offset;
@@ -1038,6 +1072,14 @@ pub fn show(
                     bottom,
                     winui::SELECTED_INACTIVE(),
                 );
+            } else if hovered_row == Some(idx) {
+                let bottom = top + row_h() - 2.0;
+                let hover_c = if st.wallpaper_alpha.is_some() {
+                    Color32::from_rgba_unmultiplied(255, 255, 255, 22)
+                } else {
+                    Color32::from_rgba_unmultiplied(255, 255, 255, 12)
+                };
+                fill(&bp, cl, top, last_right - 1.0, bottom, hover_c);
             }
             for (c, x0, x1) in &cols {
                 // The file-type icon sits in the File Name column, wherever it is.
@@ -1118,7 +1160,14 @@ pub fn show(
         let gy = top + row_h() - 1.0;
         // An empty list has no grid (the empty state stands alone).
         if !rows.is_empty() {
-            fill(&bp, cl, gy, rr, gy, GRID_H());
+            let grid_h = match st.wallpaper_alpha {
+                Some(a) => {
+                    let [r, g, b, _] = GRID_H().to_srgba_unmultiplied();
+                    Color32::from_rgba_unmultiplied(r, g, b, a.min(70))
+                }
+                None => GRID_H(),
+            };
+            fill(&bp, cl, gy, rr, gy, grid_h);
         }
     }
     expose_out_of_view(reach.start.max(first + visible)..reach.end);
@@ -1138,10 +1187,17 @@ pub fn show(
         resp.clone().on_hover_text_at_pointer(full);
     }
     filter_box(ui, st);
+    let grid_v = match st.wallpaper_alpha {
+        Some(a) => {
+            let [r, g, b, _] = GRID_V_RIGHT().to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a.min(70))
+        }
+        None => GRID_V_RIGHT(),
+    };
     for (_, _, x1) in cols.iter().filter(|_| !rows.is_empty()) {
         // On the column's last pixel, under its header's divider: one straight line from the
         // header down (#924: it sat a pixel to the right, on the next column's first).
-        fill(&bp, *x1, body_top, *x1, rb, GRID_V_RIGHT());
+        fill(&bp, *x1, body_top, *x1, rb, grid_v);
     }
     // While a column is dragged: a translucent copy of its header follows the pointer, and a
     // 2 px mark shows where it will land.
@@ -1221,13 +1277,6 @@ pub fn show(
     }
 
     // ---- row hit testing -------------------------------------------------------------------
-    let row_at = |pos: Pos2| -> Option<usize> {
-        if !body.contains(pos) || pos.x > last_right {
-            return None;
-        }
-        let idx = ((pos.y - body_top + shown_scroll) / row_h()).floor() as usize;
-        (idx < rows.len()).then_some(idx)
-    };
     let mods = ui.input(|i| i.modifiers);
     if let Some(on_screen) = resp.interact_pointer_pos()
         && let pos = english(on_screen)

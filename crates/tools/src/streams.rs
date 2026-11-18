@@ -46,6 +46,11 @@ pub enum Helper {
     Protected,
     /// yt-dlp gave no address (or no file name) to download it from.
     NoAddress,
+    /// The file's server refused MDM's own request (an HTTP 4xx), yet handed it to yt-dlp: a CDN
+    /// that wants the cookies its site's page set (TikTok's challenge cookie), or one that takes
+    /// only the browser's exact handshake. yt-dlp re-reads the page with those and downloads the
+    /// file itself (#795).
+    Refused,
 }
 
 impl Helper {
@@ -57,8 +62,18 @@ impl Helper {
             Helper::Protocol(p) => format!("its protocol ({p})"),
             Helper::Protected => "a protected stream".into(),
             Helper::NoAddress => "yt-dlp gave no address for it".into(),
+            Helper::Refused => "its server refused MDM's own request".into(),
         }
     }
+}
+
+/// Was an error the file's server refusing MDM's request outright, the kind yt-dlp gets past with
+/// its own cookies and handshake? Matched on the engine's own wording (`Error::Status`: "server
+/// answered 403 Forbidden"), so a refused download falls back to yt-dlp instead of failing — and
+/// a network fault, a disk error or a bad resume state still fails as before.
+pub fn server_refused(error: &str) -> bool {
+    let e = error.to_ascii_lowercase();
+    e.contains("server answered 4")
 }
 
 /// One stream of a choice as the engine downloads it.

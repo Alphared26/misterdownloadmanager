@@ -18,6 +18,8 @@ pub fn is_video_page(url: &Url) -> bool {
     let host = host
         .strip_prefix("www.")
         .or_else(|| host.strip_prefix("m."))
+        .or_else(|| host.strip_prefix("web."))
+        .or_else(|| host.strip_prefix("mobile."))
         .unwrap_or(&host);
     let path = url.path();
     let segs: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
@@ -37,12 +39,19 @@ pub fn is_video_page(url: &Url) -> bool {
         "dai.ly" => segs.len() == 1,
         "twitch.tv" => matches!(segs.as_slice(), ["videos", _] | [_, "clip", _]),
         "clips.twitch.tv" => segs.len() == 1,
-        "tiktok.com" => matches!(segs.as_slice(), [_, "video", _]),
+        "tiktok.com" => {
+            matches!(segs.as_slice(), [_, "video" | "photo", _])
+                || matches!(segs.as_slice(), ["t", _])
+        }
+        "vt.tiktok.com" | "vm.tiktok.com" => segs.len() == 1,
         "x.com" | "twitter.com" => matches!(segs.as_slice(), [_, "status", _, ..]),
-        "instagram.com" => matches!(segs.as_slice(), ["reel" | "reels" | "p" | "tv", _, ..]),
+        "instagram.com" => matches!(segs.as_slice(), ["reel" | "reels" | "p" | "tv" | "share", _, ..]),
         "facebook.com" => {
             (path == "/watch" || path == "/watch/") && query("v")
-                || matches!(segs.as_slice(), [_, "videos", ..] | ["reel", _, ..])
+                || matches!(
+                    segs.as_slice(),
+                    [_, "videos", ..] | ["reel" | "reels", _, ..] | ["share", "r" | "v" | "p", _, ..]
+                )
         }
         "fb.watch" => segs.len() == 1,
         "reddit.com" | "old.reddit.com" => matches!(segs.as_slice(), ["r", _, "comments", _, ..]),
@@ -193,6 +202,14 @@ mod tests {
         assert!(page(
             "https://www.tiktok.com/@someone/video/7300000000000000000"
         ));
+        assert!(page(
+            "https://www.tiktok.com/@someone/photo/7300000000000000000"
+        ));
+        assert!(page("https://vt.tiktok.com/ZS12345/"));
+        assert!(page("https://vm.tiktok.com/ZM12345/"));
+        assert!(page("https://www.tiktok.com/t/ZG12345/"));
+        assert!(page("https://facebook.com/share/r/abc123XYZ/"));
+        assert!(page("https://web.facebook.com/share/v/abc123XYZ/"));
         assert!(page("https://x.com/someone/status/1800000000000000000"));
         assert!(page("https://www.instagram.com/reel/Cabc123/"));
         assert!(page(

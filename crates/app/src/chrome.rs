@@ -203,33 +203,64 @@ pub fn menus(p: &egui::Painter) -> Vec<(&'static str, f32, f32, f32)> {
 /// Paint the menu bar; returns what happened to its titles this frame, for [`menubar_next`]: a
 /// title clicked (or opened and shut by a screen reader), or the pointer over one (which only
 /// moves to it from another open menu).
-pub fn menu_bar(ui: &mut Ui, o: Pos2, width: f32, open: Option<usize>) -> Option<MenuBarEvent> {
+pub fn menu_bar(
+    ui: &mut Ui,
+    o: Pos2,
+    width: f32,
+    open: Option<usize>,
+    wp_alpha: Option<u8>,
+) -> Option<MenuBarEvent> {
     let p = ui.painter().clone();
-    fill(
-        &p,
-        o.x,
-        o.y,
-        o.x + width - 1.0,
-        o.y + MENU_H - 2.0,
-        MENUBAR_BG(),
-    );
-    // The bar's last row (light: #f2f2f2; dark: the bar's own).
-    fill(
-        &p,
-        o.x,
-        o.y + MENU_H - 2.0,
-        o.x + width - 1.0,
-        o.y + MENU_H - 2.0,
-        MENUBAR_BOTTOM(),
-    );
-    fill(
-        &p,
-        o.x,
-        o.y + MENU_H - 1.0,
-        o.x + width - 1.0,
-        o.y + MENU_H - 1.0,
-        MENUBAR_LINE(),
-    );
+    let menubar_bg = match wp_alpha {
+        Some(0) => Color32::TRANSPARENT,
+        Some(a) => {
+            let [r, g, b, _] = MENUBAR_BG().to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a)
+        }
+        None => MENUBAR_BG(),
+    };
+    if menubar_bg != Color32::TRANSPARENT {
+        fill(
+            &p,
+            o.x,
+            o.y,
+            o.x + width - 1.0,
+            o.y + MENU_H - 2.0,
+            menubar_bg,
+        );
+    }
+    let (bottom_c, line_c) = match wp_alpha {
+        Some(0) => (Color32::TRANSPARENT, Color32::TRANSPARENT),
+        Some(a) => {
+            let [r1, g1, b1, _] = MENUBAR_BOTTOM().to_srgba_unmultiplied();
+            let [r2, g2, b2, _] = MENUBAR_LINE().to_srgba_unmultiplied();
+            (
+                Color32::from_rgba_unmultiplied(r1, g1, b1, a.min(60)),
+                Color32::from_rgba_unmultiplied(r2, g2, b2, a.min(60)),
+            )
+        }
+        None => (MENUBAR_BOTTOM(), MENUBAR_LINE()),
+    };
+    if bottom_c != Color32::TRANSPARENT {
+        fill(
+            &p,
+            o.x,
+            o.y + MENU_H - 2.0,
+            o.x + width - 1.0,
+            o.y + MENU_H - 2.0,
+            bottom_c,
+        );
+    }
+    if line_c != Color32::TRANSPARENT {
+        fill(
+            &p,
+            o.x,
+            o.y + MENU_H - 1.0,
+            o.x + width - 1.0,
+            o.y + MENU_H - 1.0,
+            line_c,
+        );
+    }
     let mut hit = None;
     // For screen readers and UI Automation (#113): a menu bar whose titles are menu items that
     // open their menus (Click, as with the mouse).
@@ -1877,24 +1908,49 @@ pub fn toolbar(
     width: f32,
     buttons: &[(Icon, &str, bool)],
     keys: Option<usize>,
+    wp_alpha: Option<u8>,
 ) -> Option<ToolbarEvent> {
     let p = ui.painter().clone();
     let top = o.y + MENU_H;
     let c = crate::theme::colors();
-    fill(&p, o.x, top, o.x + width - 1.0, top, c.toolbar_line);
+    let line_c = match wp_alpha {
+        Some(a) => {
+            let [r, g, b, _] = c.toolbar_line.to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a.min(60))
+        }
+        None => c.toolbar_line,
+    };
+    let line_light_c = match wp_alpha {
+        Some(a) => {
+            let [r, g, b, _] = c.toolbar_line_light.to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a.min(60))
+        }
+        None => c.toolbar_line_light,
+    };
+    fill(&p, o.x, top, o.x + width - 1.0, top, line_c);
     fill(
         &p,
         o.x,
         top + 1.0,
         o.x + width - 1.0,
         top + 1.0,
-        c.toolbar_line_light,
+        line_light_c,
     );
     // Both modes (light-main.md; dark changes only colours): Tahoma labels, 66 px buttons, a
     // 68 px band.
     let (font, base_w, band_h) = (winui::tahoma(), 66.0f32, 68.0);
     let band = Rect::from_min_size(pos2(o.x, top + 2.0), vec2(width, band_h));
-    p.rect_filled(band, 0.0, WINDOW_BG());
+    let band_bg = match wp_alpha {
+        Some(0) => Color32::TRANSPARENT,
+        Some(a) => {
+            let [r, g, b, _] = WINDOW_BG().to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a)
+        }
+        None => WINDOW_BG(),
+    };
+    if band_bg != Color32::TRANSPARENT {
+        p.rect_filled(band, 0.0, band_bg);
+    }
     let mut x = o.x;
     let mut event = None;
     let is_dropdown =
@@ -2237,8 +2293,17 @@ pub fn categories(
     rows: &[TreeRow<'_>],
     // The tree has the keys (its chosen node shows the focus).
     keys: bool,
+    wp_alpha: Option<u8>,
 ) -> Option<TreeEvent> {
     let p = ui.painter().clone();
+    let cat_frame_c = match wp_alpha {
+        Some(0) => Color32::from_rgba_unmultiplied(120, 120, 120, 50),
+        Some(a) => {
+            let [r, g, b, _] = CAT_FRAME().to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a.saturating_add(60))
+        }
+        None => CAT_FRAME(),
+    };
     let y0 = o.y + pane_top() + MENU_H; // frame top
     // Laid out in English (frame x 6 .. right); every part made where it is on screen — the pane
     // on the right in RTL, its tree indenting from the right.
@@ -2249,7 +2314,7 @@ pub fn categories(
     p.rect_stroke(
         frame,
         0.0,
-        Stroke::new(1.0, CAT_FRAME()),
+        Stroke::new(1.0, cat_frame_c),
         egui::StrokeKind::Inside,
     );
     winui::fill_l(
@@ -2258,7 +2323,7 @@ pub fn categories(
         y0 + 18.0,
         right - 1.0,
         y0 + 18.0,
-        CAT_FRAME(),
+        cat_frame_c,
     ); // caption underline
     // i18n: title of the side pane that lists the categories
     let caption = crate::i18n::t("Categories");
@@ -2292,7 +2357,17 @@ pub fn categories(
         event = Some(TreeEvent::Close);
     }
     let tree = Rect::from_min_max(pos2(o.x + 8.0, y0 + 18.0), pos2(right - 3.0, bottom - 9.0));
-    p.rect_filled(winui::rect(tree), 0.0, TREE_BG());
+    let tree_bg = match wp_alpha {
+        Some(0) => Color32::TRANSPARENT,
+        Some(a) => {
+            let [r, g, b, _] = TREE_BG().to_srgba_unmultiplied();
+            Color32::from_rgba_unmultiplied(r, g, b, a)
+        }
+        None => TREE_BG(),
+    };
+    if tree_bg != Color32::TRANSPARENT {
+        p.rect_filled(winui::rect(tree), 0.0, tree_bg);
+    }
 
     // Scroll bars (notes/ui-spec/scrollbars.md "Categories tree"): by rows vertically, by
     // pixels horizontally; each shows when the content overflows (Win32 rule).
@@ -2454,7 +2529,9 @@ pub fn categories(
         }
         if let Some(open) = r.expander {
             if crate::theme::colors().tree_chevrons {
-                winui::fill_l(&tp, o.x + 11.0, top, o.x + 26.0, top + 15.0, TREE_BG());
+                if tree_bg != Color32::TRANSPARENT {
+                    winui::fill_l(&tp, o.x + 11.0, top, o.x + 26.0, top + 15.0, tree_bg);
+                }
                 chevron(&tp, o.x, top, open, r.selected);
             } else {
                 // Classic box; nothing opaque around it, so connectors run up to it.
@@ -3555,7 +3632,7 @@ mod tests {
         let pass = |keys: Option<usize>, events: Vec<egui::Event>| {
             let mut ev = None;
             let update = a11y_pass(&ctx, events, |ui| {
-                ev = super::toolbar(ui, pos2(0.0, 0.0), 900.0, &buttons, keys);
+                ev = super::toolbar(ui, pos2(0.0, 0.0), 900.0, &buttons, keys, None);
             });
             (ev, update)
         };
@@ -3686,7 +3763,7 @@ mod tests {
         let mut pass = |keys: bool, events: Vec<egui::Event>| {
             let mut ev = None;
             let update = a11y_pass(&ctx, events, |ui| {
-                ev = super::categories(ui, &mut icons, pos2(0.0, 0.0), 400.0, 200.0, &rows, keys);
+                ev = super::categories(ui, &mut icons, pos2(0.0, 0.0), 400.0, 200.0, &rows, keys, None);
             });
             (ev, update)
         };

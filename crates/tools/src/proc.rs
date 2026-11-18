@@ -949,6 +949,12 @@ fn runtime_dirs() -> Vec<PathBuf> {
         if let Some(programs) = std::env::var_os("ProgramFiles") {
             dirs.push(Path::new(&programs).join("nodejs"));
         }
+        if let Some(programs86) = std::env::var_os("ProgramFiles(x86)") {
+            dirs.push(Path::new(&programs86).join("nodejs"));
+        }
+        if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+            dirs.push(Path::new(&local).join("Programs").join("nodejs"));
+        }
         dirs
     }
     #[cfg(not(windows))]

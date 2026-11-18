@@ -2350,6 +2350,10 @@ fn helper_line(why: &mdm_tools::streams::Helper) -> String {
         }
         // i18n: progress window, a video's line: the helper program yt-dlp gave no address MDM's own downloader could use
         Helper::NoAddress => crate::i18n::t("yt-dlp downloads it itself").to_owned(),
+        Helper::Refused => {
+            // i18n: progress window, a video's line: the file's server refused MDM's own downloader, so the helper program yt-dlp fetches it with the page's own cookies
+            crate::i18n::t("yt-dlp downloads it itself: the server refused MDM").to_owned()
+        }
     }
 }
 

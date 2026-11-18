@@ -819,6 +819,25 @@ impl About {
                 ) {
                     support();
                 }
+                // This fork's own row: who modified it, and its source beside the name when the
+                // fork has a source. The link's place is worked out here, not through `place`
+                // (a closure borrowing the row's x/y, which the row's own `y +=` would then
+                // conflict with).
+                y += 22.0;
+                winui::text(&p, o.x + 80.0, y, crate::modinfo::MOD_BY, winui::MUTED());
+                if !crate::modinfo::FORK_URL.is_empty() {
+                    // Beside the row's first word: this row's own link, at the left margin.
+                    if winui::link(
+                        ui,
+                        &p,
+                        x,
+                        y,
+                        crate::modinfo::FORK_NAME,
+                        "fork-source",
+                    ) {
+                        crate::launch::open(crate::modinfo::FORK_URL);
+                    }
+                }
                 // The last row ends above OK (at 204 when it fits as planned).
                 crate::dialogs::grow_px(ui.ctx(), "about", y + 12.0 - (o.y + 194.0));
                 let ok = winui::button(

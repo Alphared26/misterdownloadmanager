@@ -11,6 +11,21 @@
   "video_download": {
     "message": "Unduh video"
   },
+  "image_download": {
+    "message": "Unduh foto"
+  },
+  "image_download_orig": {
+    "message": "Unduh kualitas asli"
+  },
+  "image_copy": {
+    "message": "Salin tautan foto"
+  },
+  "image_copied": {
+    "message": "Tautan disalin ke papan klip"
+  },
+  "image_tip": {
+    "message": "Unduh foto resolusi tinggi"
+  },
   "video_more": {
     "message": "Opsi lainnya"
   },

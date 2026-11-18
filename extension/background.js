@@ -2868,7 +2868,14 @@ async function videoTarget(m, page, sender) {
   const played = playedItem(tab.id, m.played, sender.frameId || 0);
   const src = file || (played ? played.url : "") || (post || feed ? "" : await streamFor(sender));
   if (!named && !src) return null;
-  const own = named || page;
+  const isFeedPage = (u) => {
+    try {
+      return /^\/(?:$|home\/?$|feed\/?$|explore\/?$|foryou\/?$)/i.test(new URL(u).pathname);
+    } catch {
+      return false;
+    }
+  };
+  const own = named || (isFeedPage(page) && src ? src : page);
   return {
     own,
     src,
@@ -2973,6 +2980,19 @@ async function pageMessage(m, sender) {
   }
   if (m.type === "link" && typeof m.url === "string") {
     const name = typeof m.name === "string" ? m.name.split(/[\\/]/).pop().slice(0, 255) : "";
+    if (m.explicit) {
+      const reply = await handOff({
+        url: m.url,
+        finalUrl: m.url,
+        referrer: page || "",
+        page: page || "",
+        filename: name,
+        explicit: true,
+        incognito: Boolean(tab.incognito),
+        storeId: tab.cookieStoreId,
+      });
+      return { ok: Boolean(reply.ok) };
+    }
     return link(m.url, page || "", Boolean(tab.incognito), name);
   }
   // Safari's page.js, at each page: the rules it holds links by, refreshed when old (see `link`).

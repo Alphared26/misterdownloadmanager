@@ -15,6 +15,26 @@
     "message": "Download video",
     "description": "the button over a video on a web page that downloads it; verb; short (it sits on the video)"
   },
+  "image_download": {
+    "message": "Download photo",
+    "description": "the button over an image or photo on a web page that downloads it"
+  },
+  "image_download_orig": {
+    "message": "Download original",
+    "description": "menu command to download the original full resolution image"
+  },
+  "image_copy": {
+    "message": "Copy photo link",
+    "description": "menu command to copy image URL to clipboard"
+  },
+  "image_copied": {
+    "message": "Link copied to clipboard",
+    "description": "status message after copying image link"
+  },
+  "image_tip": {
+    "message": "Download high quality photo",
+    "description": "hover tooltip for photo download button"
+  },
   "video_more": {
     "message": "More options",
     "description": "the small arrow next to the Download video button that opens its menu (read aloud by screen readers)"

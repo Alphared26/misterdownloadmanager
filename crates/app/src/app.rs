@@ -309,6 +309,8 @@ enum Cmd {
     CheckUpdates,
     About,
     TellFriend,
+    /// Tasks → Mini progress pop-up (this fork's): show or hide the small gauge.
+    ToggleMiniPopup,
     /// Help → Support MDM: the creator's GitHub Sponsors page in the browser.
     Support,
     Exit,
@@ -359,6 +361,15 @@ enum Cmd {
     ToggleAlwaysDark,
     /// View → Theme → a theme (#45): a built-in's id or a theme file's name.
     Theme(&'static str),
+    /// View → Wallpaper → Choose a picture…: picks an image file, copied into the data folder
+    /// and drawn behind the main window (this fork, #wallpaper).
+    WallpaperPick,
+    /// View → Wallpaper: the wallpaper on or off (this fork).
+    WallpaperToggle(bool),
+    /// View → Wallpaper → Opacity (this fork).
+    WallpaperAlpha(u8),
+    /// View → Wallpaper → No wallpaper: drop the picture (this fork).
+    WallpaperClear,
     /// View → Theme → Open themes folder.
     OpenThemesFolder,
     /// View → Theme → Add a theme file: a theme or a Base16 or pywal colour scheme, copied
@@ -1080,6 +1091,9 @@ pub struct App {
     kept_answers: std::collections::HashMap<u64, mdm_engine::KeptAnswer>,
     /// Help menu windows.
     about: Option<crate::help::About>,
+    /// This fork: the mini pop-up is showing (Tasks → Mini progress pop-up toggles it; the
+    /// setting only remembers whether a start begins with it).
+    mini_open: bool,
     updates: Option<crate::help::Updates>,
     shortcuts: Option<crate::help::Shortcuts>,
     tell_friend: Option<crate::help::TellFriend>,
@@ -1274,6 +1288,11 @@ pub struct App {
     rename_checks: Vec<(u64, String, std::sync::mpsc::Receiver<RenameCheck>)>,
     /// A finished queue asked to turn the computer off: the countdown, cancellable.
     turn_off: Option<dialogs::TurnOffCountdown>,
+    /// Instagram posts being resolved off the window's thread (`socmed::resolve`): the answers
+    /// to come, each the original URL and the media the post holds. This fork's Instagram resolver (#socmed).
+    ig_checks: Vec<std::sync::mpsc::Receiver<(url::Url, crate::socmed::IgResult)>>,
+    /// This fork (#wallpaper): the custom wallpaper behind the main window, loaded once.
+    wallpaper: crate::wallpaper::Wallpaper,
     /// The global speed cap shared by every download (Speed Limiter settings).
     global: std::sync::Arc<mdm_engine::limiter::Limiter>,
     /// Connection caps learned per host, shared by every download.
@@ -1754,6 +1773,7 @@ impl App {
             start,
         );
         app.zoom = zoom;
+        app.mini_open = app.settings.mini_popup;
         // The unfinished downloads' resume states: beside the window, which opens with the list
         // as saved (a folder that doesn't answer held its first frame for 21 s).
         let repaint = ctx.clone();
@@ -1767,6 +1787,22 @@ impl App {
         if let Err(why) = app.cnl.listen(app.settings.cnl_on) {
             // i18n: title of the notice when Click'n'Load couldn't start
             app.notice = Some((crate::i18n::mark("Click'n'Load"), why));
+        }
+        // This fork says once, on its first start, that it is a modified build and who made it.
+        // The source address lives in modinfo (empty until the maintainer's account is back), so
+        // the notice sends the reader to About, which shows it when there is one.
+        if !app.settings.mod_notice_seen {
+            app.notice = Some((
+                crate::i18n::mark(crate::modinfo::FORK_NAME),
+                format!(
+                    "{}\n\n{}\n\n{}",
+                    crate::i18n::t("This is a modified build of Mister Download Manager."),
+                    crate::modinfo::MOD_BY,
+                    crate::i18n::t("See Help → About for the source and the licence (GNU GPL v3 or later)."),
+                ),
+            ));
+            app.settings.mod_notice_seen = true;
+            app.dirty = true;
         }
         app.rss = crate::rss::Store::path()
             .map(|p| crate::rss::Store::load(&p))
@@ -1857,6 +1893,7 @@ impl App {
             list_view: view,
             add_url: None,
             about: None,
+            mini_open: false,
             updates: None,
             shortcuts: None,
             tell_friend: None,
@@ -1960,6 +1997,8 @@ impl App {
             rename_checks: Vec::new(),
             deferred_torrent_queue,
             turn_off: None,
+            ig_checks: Vec::new(),
+            wallpaper: crate::wallpaper::Wallpaper::default(),
             global: std::sync::Arc::new(mdm_engine::limiter::Limiter::new(None)),
             host_limits: Default::default(),
             quota: Default::default(),
@@ -4922,6 +4961,71 @@ impl App {
         }
     }
 
+    /// Instagram posts resolved off the window's thread (`socmed::resolve`): each media a post
+    /// holds is added as a plain download the CDN serves. A post that was blocked (private, or
+    /// limited by Instagram) falls back to the video window, where yt-dlp tries with the
+    /// browser's cookies. This fork (#socmed).
+    fn poll_ig_checks(&mut self, ctx: &egui::Context) {
+        let mut done = Vec::new();
+        self.ig_checks.retain(|rx| match rx.try_recv() {
+            Ok(r) => {
+                done.push(r);
+                false
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(_) => false,
+        });
+        if done.is_empty() {
+            return;
+        }
+        for (orig_url, result) in done {
+            let media = match result {
+                crate::socmed::IgResult::Media(m) if !m.is_empty() => m,
+                crate::socmed::IgResult::Media(_) => continue,
+                crate::socmed::IgResult::Blocked(why) => {
+                    tracing::info!("Instagram post: {why}; trying video window with url");
+                    // Fall back to the video window with the original URL preserved: yt-dlp tries with the browser's cookies,
+                    // which reach the private and the login-walled posts the anonymous resolver
+                    // cannot.
+                    self.video_dlg = Some(self.video_dialog(Some((orig_url.as_str(), Default::default()))));
+                    let msg = crate::i18n::t(
+                        "Instagram didn't answer ({why}): try downloading from the video window, \
+                         or pick a browser at Options → Sites Logins → Cookies for video sites",
+                    );
+                    self.notice = Some((
+                        crate::i18n::mark("Instagram"),
+                        crate::i18n::fmt(&msg, &[("why", &why)]),
+                    ));
+                    continue;
+                }
+            };
+            let dir = self.settings.category_dir(Category::Video, &self.downloads);
+            let mut added = Vec::new();
+            for (i, m) in media.iter().enumerate() {
+                let Ok(url) = url::Url::parse(&m.url) else { continue };
+                let stem = format!("instagram_{}", i + 1);
+                let ext = if m.is_video { "mp4" } else { "jpg" };
+                let dest = dir.join(format!("{stem}.{ext}"));
+                let id = self.push_item(
+                    url,
+                    dest,
+                    Category::Video,
+                    crate::i18n::t("Instagram post").to_owned(),
+                    None,
+                    None,
+                    Default::default(),
+                    crate::i18n::mark("from Instagram"),
+                );
+                added.push(id);
+            }
+            // Start each one right away: the CDN serves them directly.
+            for id in added {
+                self.start(id, true);
+            }
+        }
+        ctx.request_repaint();
+    }
+
     /// Pure in-memory stamp of everything that can change a progress window's
     /// `rename_disabled_reason`, so disk checks never run per frame while idle.
     fn progress_rename_guard_stamp(&self) -> u64 {
@@ -7539,6 +7643,42 @@ impl App {
                         .pick_file()
                 });
             }
+            Cmd::WallpaperPick => {
+                // i18n: title of the file dialog of View → Wallpaper → Choose a picture
+                let title = crate::i18n::t("Choose a wallpaper picture").to_owned();
+                // i18n: the kind of file View → Wallpaper lists: JPEG, PNG and WebP pictures
+                let kinds = crate::i18n::t("Pictures").to_owned();
+                let all = crate::i18n::t("All files").to_owned();
+                winui::start_pick(&self.ui_ctx, "app-wallpaper", move || {
+                    crate::winui::file_dialog(&title)
+                        .add_filter(kinds, &["jpg", "jpeg", "png", "webp"])
+                        .add_filter(all, &["*"])
+                        .pick_file()
+                });
+            }
+            Cmd::WallpaperToggle(on) => {
+                self.settings.wallpaper_on = on;
+                if !on {
+                    self.wallpaper = crate::wallpaper::Wallpaper::default();
+                }
+                // Turn it back on: the picture loads on the next frame (paint).
+                self.dirty = true;
+                ctx.request_repaint();
+            }
+            Cmd::WallpaperAlpha(alpha) => {
+                self.settings.wallpaper_alpha = alpha;
+                self.dirty = true;
+                ctx.request_repaint();
+            }
+            Cmd::WallpaperClear => {
+                self.wallpaper = crate::wallpaper::Wallpaper::default();
+                self.settings.wallpaper_on = false;
+                if let Some(p) = crate::wallpaper::default_path() {
+                    let _ = std::fs::remove_file(p);
+                }
+                self.dirty = true;
+                ctx.request_repaint();
+            }
             // Every window at once (the frames after this one); saved by `follow_zoom`.
             Cmd::InterfaceSize(percent) => crate::scale::set(ctx, percent),
             #[cfg(windows)]
@@ -7790,6 +7930,13 @@ impl App {
                 self.settings.drop_target = !self.settings.drop_target;
                 self.dirty = true;
             }
+            Cmd::ToggleMiniPopup => {
+                // The mini pop-up is drawn each frame while `mini_open` says so; the setting only
+                // remembers whether the next start begins with it.
+                self.mini_open = !self.mini_open;
+                self.settings.mini_popup = self.mini_open;
+                self.dirty = true;
+            }
             Cmd::ShowMain => self.show_window(ctx),
             Cmd::Export { ef2 } => self.export(ef2),
             Cmd::Import { ef2 } => self.import(ef2),
@@ -7852,12 +7999,14 @@ impl App {
     /// Pull engine progress into the rows; open "Download complete" when one finishes.
     fn poll(&mut self, ctx: &egui::Context) {
         self.poll_moves();
+        self.poll_ig_checks(ctx);
         self.poll_dragged_out();
         self.poll_deferred_torrent_renames();
         if !self.moving.is_empty()
             || !self.renaming.is_empty()
             || !self.rename_checks.is_empty()
             || !self.deferred_torrent_queue.is_empty()
+            || !self.ig_checks.is_empty()
         {
             ctx.request_repaint_after(Duration::from_millis(200));
         }
@@ -7919,6 +8068,17 @@ impl App {
             // Finished files leave download queues (synchronization queues keep them).
             for q in self.queues.iter_mut().filter(|q| !q.sync) {
                 q.items.retain(|x| x != id);
+            }
+            // This fork (a gap of IDM's): a program to run when a download finishes, the finished
+            // file's path as its argument. An antivirus scanner is the usual one; anything works.
+            if !self.settings.run_on_finish.is_empty()
+                && let Some(item) = self.item(*id)
+            {
+                let file = item.dest.clone();
+                let command = self.settings.run_on_finish.clone();
+                self.rt.spawn_blocking(move || {
+                    let _ = std::process::Command::new(&command).arg(&file).spawn();
+                });
             }
         }
         if self.extracts.poll(&mut self.items, ctx) {
@@ -8221,6 +8381,13 @@ impl App {
                     true,
                     self.settings.drop_target,
                 ),
+                // i18n: Tasks menu: show or hide this fork's tiny always-on-top download gauge
+                I(
+                    "&Watch progress (mini pop-up)",
+                    Cmd::ToggleMiniPopup,
+                    true,
+                    self.mini_open,
+                ),
                 Sep,
                 // i18n: verb: save the download list to a file
                 Sub(
@@ -8400,21 +8567,50 @@ impl App {
             .position(|e| matches!(e, I(_, Cmd::ToggleAlwaysDark, ..)))
         {
             menu.insert(at + 1, self.theme_menu());
-            menu.insert(at + 2, self.interface_size_menu());
+            menu.insert(at + 2, self.wallpaper_menu());
+            menu.insert(at + 3, self.interface_size_menu());
             #[cfg(windows)]
-            menu.insert(at + 3, self.text_menu());
+            menu.insert(at + 4, self.text_menu());
             #[cfg(gpu)]
             menu.insert(
-                at + if cfg!(windows) { 4 } else { 3 },
+                at + if cfg!(windows) { 5 } else { 4 },
                 self.draw_with_menu(),
             );
             // Linux, a Wayland session that runs XWayland too: after Draw with (#624).
             #[cfg(target_os = "linux")]
             if crate::unix::window_system().both {
-                menu.insert(at + 4, self.window_system_menu());
+                menu.insert(at + 5, self.window_system_menu());
             }
         }
         menu
+    }
+
+    /// View → Wallpaper (this fork, #wallpaper): the custom picture behind the main window, on or
+    /// off, chosen, or dropped. Off by default; on, the panels give way to it (see
+    /// `Wallpaper::apply_translucency`).
+    fn wallpaper_menu(&self) -> MenuEntry<Cmd> {
+        use MenuEntry::{Item as I, Radio, Sep, Sub};
+        let on = self.settings.wallpaper_on;
+        let has = self.wallpaper.ready() || !self.settings.wallpaper_path.is_empty();
+        let current_alpha = self.settings.wallpaper_alpha;
+        let items = vec![
+            // i18n: View → Wallpaper: draw the picture behind the main window, the panels giving way to it
+            I("Show the wallpaper", Cmd::WallpaperToggle(!on), true, on),
+            // i18n: View → Wallpaper: pick an image file (JPEG, PNG, WebP) to draw behind the main window
+            I("Choose a picture…", Cmd::WallpaperPick, true, false),
+            Sep,
+            Radio("100% Clear (no tint, alpha 0)", Cmd::WallpaperAlpha(0), has, current_alpha == 0),
+            Radio("Very High Transparency (alpha 25)", Cmd::WallpaperAlpha(25), has, current_alpha == 25),
+            Radio("High Transparency (alpha 45)", Cmd::WallpaperAlpha(45), has, current_alpha == 45),
+            Radio("Default (alpha 55)", Cmd::WallpaperAlpha(55), has, current_alpha == 55),
+            Radio("Medium Tint (alpha 90)", Cmd::WallpaperAlpha(90), has, current_alpha == 90),
+            Radio("High Contrast Tint (alpha 140)", Cmd::WallpaperAlpha(140), has, current_alpha == 140),
+            Sep,
+            // i18n: View → Wallpaper: drop the picture and go back to the plain background
+            I("No wallpaper", Cmd::WallpaperClear, has, false),
+        ];
+        // i18n: View menu: submenu for the custom wallpaper (this fork)
+        Sub("Wallpaper", true, items)
     }
 
     /// View → Theme (#45): the built-in themes, the theme files in the themes folder, and a way
@@ -9327,6 +9523,26 @@ impl App {
 
     fn paint(&mut self, ui: &mut Ui) {
         let ctx = ui.ctx().clone();
+        // This fork (#wallpaper): load the picture the first frame it is wanted (a texture needs
+        // the egui context, which the start-up path does not have), then let the panels give way
+        // to it every frame while it is on.
+        if self.settings.wallpaper_on && !self.wallpaper.ready() {
+            let path = if self.settings.wallpaper_path.is_empty() {
+                crate::wallpaper::default_path()
+            } else {
+                Some(std::path::PathBuf::from(&self.settings.wallpaper_path))
+            };
+            if let Some(p) = path
+                && let Err(e) = self.wallpaper.load(&ctx, &p)
+            {
+                tracing::info!("wallpaper: {e}");
+                self.settings.wallpaper_on = false;
+            }
+        }
+        let alpha = self.settings.wallpaper_alpha;
+        let wp_alpha = self.wallpaper.ready().then_some(alpha);
+        ctx.data_mut(|d| d.insert_temp(egui::Id::unique("wallpaper-alpha"), wp_alpha));
+        crate::wallpaper::Wallpaper::apply_translucency_alpha(&ctx, self.wallpaper.ready(), alpha);
         let full = ui.max_rect();
         // The client area, laid out from the right in a right-to-left interface (winui).
         let _surface = winui::Surface::enter(full.min.x, full.max.x);
@@ -9406,7 +9622,7 @@ impl App {
         }
 
         // Menu bar and its popups: which menu is open is chrome::menubar_next's to say.
-        if let Some(event) = chrome::menu_bar(ui, o, w, self.open_menu) {
+        if let Some(event) = chrome::menu_bar(ui, o, w, self.open_menu, wp_alpha) {
             self.open_menu = chrome::menubar_next(self.open_menu, event);
         }
         // A menu opened by Left or Right is drawn in the same pass as the one it replaces (a
@@ -9530,7 +9746,7 @@ impl App {
         ];
         let tb: Vec<(Icon, &str, bool)> = buttons.iter().map(|(i, l, e, _)| (*i, *l, *e)).collect();
         let tb_keys = (self.toolbar_keys && free).then_some(self.toolbar_at);
-        match chrome::toolbar(ui, o, w, &tb, tb_keys) {
+        match chrome::toolbar(ui, o, w, &tb, tb_keys, wp_alpha) {
             Some(ToolbarEvent::Click(k)) => chosen = Some((buttons[k].3, None)),
             Some(ToolbarEvent::Drop(k, at)) => {
                 let kind = match buttons[k].0 {
@@ -9625,6 +9841,7 @@ impl App {
                 right,
                 &tree,
                 self.tree_keys && free,
+                wp_alpha,
             )
             .or(tree_event)
             {
@@ -9683,6 +9900,7 @@ impl App {
                 .and_then(|id| items.iter().find(|it| it.id == *id))
                 .map_or(String::new(), |it| it.log_lines(12))
         };
+        self.list.wallpaper_alpha = self.wallpaper.ready().then_some(alpha);
         let r = list::show(
             ui,
             outer,
@@ -9805,6 +10023,19 @@ impl App {
                     || i.consume_key(egui::Modifiers::NONE, egui::Key::F2)
             }) {
                 chosen = Some((Cmd::MoveRename, None));
+            }
+            // This fork: Ctrl+Shift+P shows or hides the mini progress pop-up.
+            if ctx.input_mut(|i| {
+                i.consume_key(
+                    egui::Modifiers {
+                        ctrl: true,
+                        shift: true,
+                        ..Default::default()
+                    },
+                    egui::Key::P,
+                )
+            }) {
+                chosen = Some((Cmd::ToggleMiniPopup, None));
             }
             if find {
                 chosen = Some((Cmd::Find, None));
@@ -10158,6 +10389,66 @@ impl App {
         }
     }
 
+    /// This fork's mini progress pop-up: one small, always-on-top gauge for the active download
+    /// with the fastest current rate. It is for watching a game or a film around it, so it shows
+    /// only the file, percentage, speed and time left. Tasks → Mini progress pop-up toggles it.
+    fn mini_popup(&mut self, ctx: &egui::Context) {
+        if !self.mini_open {
+            return;
+        }
+        // The active download receiving fastest now; while all wait at 0, the first active one.
+        let Some(item) = self
+            .items
+            .iter()
+            .filter(|i| i.status == Status::Downloading)
+            .max_by(|a, b| a.rate().total_cmp(&b.rate()))
+        else {
+            return;
+        };
+        let readout = crate::mini::Readout {
+            file_name: item.file_name.clone(),
+            fraction: item.fraction(),
+            rate: item.rate(),
+            time_left: item.time_left(),
+        };
+        let style = self.settings.mini_style.min(2);
+        let size = crate::mini::size(style);
+        let vid = egui::ViewportId::from_hash_of("mini-progress");
+        let mut builder = crate::quiet(crate::window_builder())
+            .with_title(crate::i18n::os_text(crate::i18n::t("Download progress")))
+            .with_inner_size(size)
+            .with_resizable(false)
+            .with_maximize_button(false)
+            .with_minimize_button(false)
+            .with_window_level(egui::WindowLevel::AlwaysOnTop)
+            .with_icon(crate::app_icon());
+        // First time: top-right of the same screen as the main window, with enough room from the
+        // edge for Windows' shadow. The person can drag it anywhere after that; egui keeps it.
+        let key = egui::Id::unique("mini-progress-pos");
+        if let Some(p) = crate::dialogs::place(ctx, key, size) {
+            builder = builder.with_position(p);
+        } else if let Some(screen) = ctx.input(|i| i.viewport().monitor_size) {
+            builder = builder.with_position(pos2(screen.x - size[0] - 20.0, 20.0));
+        }
+        let mut close = false;
+        ctx.show_viewport_immediate(vid, builder, |ui, _| {
+            if crate::dialogs::close_requested(ui) {
+                close = true;
+                return;
+            }
+            egui::CentralPanel::default()
+                .frame(egui::Frame::new().fill(winui::BG()))
+                .show(ui, |ui| crate::mini::draw(ui, style, ui.max_rect(), &readout));
+        });
+        if close {
+            self.mini_open = false;
+            self.settings.mini_popup = false;
+            self.dirty = true;
+        } else {
+            ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        }
+    }
+
     /// The drop target's menu at `screen` (a point on the screen, logical points).
     fn drop_target_menu(&mut self, screen: Pos2, ctx: &egui::Context) {
         // Popups take a point in the main window.
@@ -10435,6 +10726,9 @@ impl App {
         if let Some(path) = winui::picked(ctx, "app-theme-file") {
             self.add_theme_file(&path, ctx);
         }
+        if let Some(path) = winui::picked(ctx, "app-wallpaper") {
+            self.set_wallpaper(&path, ctx);
+        }
         if let Some(target) = winui::picked(ctx, "app-move-rename")
             && let Some(id) = self.move_rename_for.take()
         {
@@ -10466,6 +10760,51 @@ impl App {
                         &[("error", &e)],
                     ),
                 ));
+            }
+        }
+    }
+
+    /// View → Wallpaper → Choose a picture, answered (this fork, #wallpaper): the picture copied
+    /// into the data folder, loaded and drawn behind the main window. A picture that won't read
+    /// says why; nothing changes until one works.
+    fn set_wallpaper(&mut self, path: &std::path::Path, ctx: &egui::Context) {
+        // Keep the picture beside the settings, so it survives a move of the original and a
+        // portable copy carries it.
+        let dest = match crate::wallpaper::default_path() {
+            Some(d) => d,
+            None => return,
+        };
+        let dir = match dest.parent() {
+            Some(d) => d,
+            None => return,
+        };
+        if let Err(e) = std::fs::create_dir_all(dir) {
+            tracing::warn!("wallpaper folder: {e}");
+            return;
+        }
+        if let Err(e) = std::fs::copy(path, &dest) {
+            tracing::warn!("wallpaper copy: {e}");
+            return;
+        }
+        self.settings.wallpaper_path = dest.display().to_string();
+        self.settings.wallpaper_on = true;
+        match self.wallpaper.load(ctx, &dest) {
+            Ok(()) => {
+                self.dirty = true;
+                ctx.request_repaint();
+            }
+            Err(e) => {
+                tracing::warn!("wallpaper load: {e}");
+                self.notice = Some((
+                    // i18n: title of the message when a wallpaper picture can't be used
+                    crate::i18n::mark("Wallpaper"),
+                    crate::i18n::fmt(
+                        // i18n: {error} is why, in English (not a picture, unreadable)
+                        crate::i18n::t("This file can't be used as a wallpaper: {error}"),
+                        &[("error", &e)],
+                    ),
+                ));
+                self.settings.wallpaper_on = false;
             }
         }
     }
@@ -11227,6 +11566,20 @@ impl App {
                         parts,
                     };
                     self.open_torrent_dialog_with(Some(new.url.to_string()), Some(remote), ctx);
+                }
+                // An Instagram post (this fork, #socmed): resolve it off the window's thread. A
+                // public photo, carousel or reel is added as a plain download the CDN serves; a
+                // private or limited one falls back to the video window (yt-dlp).
+                Outcome::Done(new) if crate::socmed::shortcode(new.url.as_str()).is_some() => {
+                    self.add_url = None;
+                    let url = new.url.clone();
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    let url_for_resolve = url.clone();
+                    self.rt.spawn(async move {
+                        let res = crate::socmed::resolve(url_for_resolve.as_str()).await;
+                        let _ = tx.send((url, res));
+                    });
+                    self.ig_checks.push(rx);
                 }
                 // A video's page, not a file (YouTube, Vimeo…): the video window looks it up.
                 Outcome::Done(new) if mdm_tools::pages::is_video_page(&new.url) => {
@@ -12180,6 +12533,7 @@ impl App {
         self.poll_cnl(&ctx);
         self.poll_imports();
         self.drop_target(&ctx);
+        self.mini_popup(&ctx);
         self.main_drops(&ctx);
         self.remember_layout(&ctx);
         // Light or dark: IDM follows Windows' app mode (checked every 2 s) unless View → Dark
@@ -12243,9 +12597,23 @@ impl App {
             }
         }
         crate::crash::step(crate::crash::Step::MainWindow);
+        // This fork (#wallpaper): a custom wallpaper shows through, so the window's own
+        // background fill gets out of its way (translucent) and the picture is drawn first.
+        let wallpaper_shown = self.wallpaper.ready();
+        let alpha = self.settings.wallpaper_alpha;
+        let panel_fill = if wallpaper_shown {
+            egui::Color32::from_rgba_unmultiplied(0, 0, 0, alpha)
+        } else {
+            chrome::WINDOW_BG()
+        };
         egui::CentralPanel::no_frame()
-            .frame(egui::Frame::new().fill(chrome::WINDOW_BG()))
-            .show(ui, |ui| self.paint(ui));
+            .frame(egui::Frame::new().fill(panel_fill))
+            .show(ui, |ui| {
+                if wallpaper_shown {
+                    self.wallpaper.draw(ui.painter(), ui.max_rect());
+                }
+                self.paint(ui);
+            });
         // A menu opened from the keyboard, said to screen readers (#328).
         chrome::tell_screen_readers(&ctx);
         crate::crash::step(crate::crash::Step::Dialogs);

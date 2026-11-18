@@ -119,6 +119,14 @@ pub struct Settings {
     /// The look (#45): a built-in theme's id ("classic", the default) or a theme file's name in
     /// the data folder's `themes` folder (crate::themefile).
     pub theme: String,
+    /// This fork (#wallpaper): the custom wallpaper, on or off.
+    pub wallpaper_on: bool,
+    /// This fork (#wallpaper): the wallpaper picture's file. Empty: the data folder's
+    /// `wallpaper.jpg` (crate::wallpaper::default_path).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub wallpaper_path: String,
+    /// This fork (#wallpaper): the panels' alpha over the wallpaper (0..=255; default 55).
+    pub wallpaper_alpha: u8,
     /// View → Draw with (#89): OpenGL or Direct3D (Windows only), used from the next start.
     /// None: MDM's default (`renderer::DEFAULT`), which may change.
     pub renderer: Option<crate::renderer::Api>,
@@ -212,6 +220,20 @@ pub struct Settings {
     /// Downloads → Customize "Download progress" dialog → Edit... (#1041): a download's
     /// progress window opens when it starts. Off, it runs in the list (double-click opens it).
     pub show_progress: bool,
+    /// Downloads → Customize "Download progress" dialog: the progress window stays above every
+    /// other window while its download runs, so the file, its percentage and its time left stay
+    /// in sight without the main window.
+    pub progress_on_top: bool,
+    /// This fork's first-run notice has been shown once, so it isn't shown again. This fork's
+    /// own setting: not upstream's.
+    pub mod_notice_seen: bool,
+    /// This fork: a small pop-up that watches a download while something else fills the screen
+    /// (a game, a film): the file, its percentage and its speed on a gauge, without the main
+    /// window. On, a Tasks command (and a shortcut) shows and hides it.
+    pub mini_popup: bool,
+    /// Which gauge the mini pop-up draws: 0 the half-circle speedometer, 1 the ring, 2 the
+    /// slim bar.
+    pub mini_style: u8,
     pub only_add_to_queue: bool,
     pub start_immediately: bool,
     pub queue_panel_later: bool,
@@ -281,6 +303,10 @@ pub struct Settings {
     pub debrid_torrents: bool,
     /// Sounds: download complete, download failed, queue started, queue stopped/finished.
     pub sounds: [(bool, String); 4],
+    /// This fork (a gap of IDM's): a program to run when a download finishes, given the finished
+    /// file's path as its argument (an antivirus scanner, a converter, anything). Empty: none.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub run_on_finish: String,
     /// The local automation API (beyond IDM): status queries over the command channel. Off by
     /// default; `misterdownloadmanager-cli api on` turns it on.
     pub automation_api: bool,
@@ -437,6 +463,9 @@ impl Default for Settings {
             dark_mode_support: true,
             always_dark: false,
             theme: "classic".into(),
+            wallpaper_on: false,
+            wallpaper_path: String::new(),
+            wallpaper_alpha: crate::wallpaper::Wallpaper::PANEL_ALPHA,
             renderer: None,
             window_system: None,
             interface_size: 100,
@@ -474,6 +503,10 @@ impl Default for Settings {
             mark_downloads: true,
             show_start_dialog: true,
             show_progress: true,
+            progress_on_top: true,
+            mod_notice_seen: false,
+            mini_popup: true,
+            mini_style: 0,
             only_add_to_queue: false,
             start_immediately: true,
             queue_panel_later: true,
@@ -507,6 +540,7 @@ impl Default for Settings {
             debrid_on: true,
             debrid_torrents: false,
             sounds: Default::default(),
+            run_on_finish: String::new(),
             automation_api: false,
             remote_on: false,
             remote_port: mdm_remote::PORT,
