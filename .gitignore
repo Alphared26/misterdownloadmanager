@@ -24,3 +24,5 @@ node_modules/
 /.claude/worktrees/
 # Keys (API keys, signing keys): never committed.
 /k/
+
+run_build.bat

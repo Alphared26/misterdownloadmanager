@@ -1699,12 +1699,17 @@ impl App {
         loaded: store::Loaded,
         start: crate::Start,
     ) -> Self {
-        // The look (#45): the chosen theme before anything is drawn.
-        crate::theme::select(&crate::theme::startup_id(&loaded.settings.theme), ctx);
+        // The look (#45): the chosen theme before anything is drawn (default Aero-Futurism for this fork).
+        let mut startup_theme = loaded.settings.theme.clone();
+        if startup_theme == "classic" {
+            startup_theme = "aero-futurism".to_string();
+        }
+        crate::theme::select(&crate::theme::startup_id(&startup_theme), ctx);
         crate::theme::apply(ctx);
         // The zoom main.rs started at (View → Interface size, #262).
         let zoom = crate::scale::startup(loaded.settings.interface_size);
         let mut settings = loaded.settings;
+        settings.theme = startup_theme;
         if settings.limiter_on_startup {
             settings.speed_limit_on = true;
         }
@@ -8621,6 +8626,8 @@ impl App {
         let mut items = Vec::new();
         let mut files = false;
         let on = |id: &str| chosen == id;
+        // i18n: View → Theme: Aero-Futurism, default for this fork
+        items.push(Radio("Aero-Futurism", Cmd::Theme("aero-futurism"), true, on("aero-futurism")));
         // i18n: View → Theme: MDM's own look, the default (IDM's layout, Windows 11's controls)
         items.push(Radio("Classic", Cmd::Theme("classic"), true, on("classic")));
         // i18n: View → Theme: the system's own colours (its accent colour, its high contrast)
@@ -8647,6 +8654,9 @@ impl App {
         items.push(Radio("Aqua", Cmd::Theme("aqua"), true, on("aqua")));
         // i18n: View → Theme: a style theme's name (a white canvas, emerald fills, 6-point corners), a name: keep "Emerald" as written
         items.push(Radio("Emerald", Cmd::Theme("emerald"), true, on("emerald")));
+        items.push(Sep);
+        items.push(Radio("Anime (Sakura Cyber)", Cmd::Theme("anime"), true, on("anime")));
+        items.push(Radio("Steampunk", Cmd::Theme("steampunk"), true, on("steampunk")));
         let wal = crate::themefile::PYWAL;
         for e in self.theme_list.iter().filter(|e| e.path.is_some()) {
             if !files {

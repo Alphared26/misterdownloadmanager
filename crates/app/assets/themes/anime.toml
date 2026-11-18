@@ -1,0 +1,76 @@
+# Anime (Sakura Cyber): Translucent amethyst glass with holographic sakura pink and violet accents.
+# Beautiful styling designed to complement anime and gaming wallpapers.
+
+name = "Anime (Sakura Cyber)"
+icons = "color"
+icon-set = "aero"
+
+[controls]
+field-focus = "ring"
+check = "fluent"
+button = "fluent"
+progress = "bar"
+scroll = "overlay"
+caption = "metro"
+focus = "ring"
+
+[sizes]
+radius = 8
+"radius.button" = 8
+"radius.part" = 4
+"radius.check" = 4
+"radius.flyout" = 10
+"radius.menu-item" = 6
+"radius.popup" = 10
+"radius.egui" = 8
+border = 1
+"focus-line" = 2
+"list.row" = 20
+"list.header" = 26
+
+[seeds.light]
+background = "#fff5f8"
+surface = "#ffffff"
+header = "#fce7f3"
+text = "#3b0764"
+accent = "#ec4899"
+selection = "#fbcfe8"
+error = "#e11d48"
+warning = "#d97706"
+success = "#10b981"
+
+[seeds.dark]
+background = "#1a0d24"
+surface = "#241233"
+header = "#2a153c"
+text = "#fdf4ff"
+accent = "#ff66b2"
+selection = "#701a75"
+error = "#fb7185"
+warning = "#fcd34d"
+success = "#34d399"
+
+[light]
+"button.accent" = "#ec4899"
+"button.accent.hot" = "#f472b6"
+"button.accent.pressed" = "#db2777"
+"button.accent.text" = "#ffffff"
+"progress.bar" = "#ec4899"
+"progress.track" = "#fce7f3"
+"focus.ring" = "#ec4899"
+"chip.web" = "#fce7f3"
+"chip.torrent" = "#ede9fe"
+"chip.text" = "#3b0764"
+
+[dark]
+"button.accent" = "#ff66b2"
+"button.accent.hot" = "#f472b6"
+"button.accent.pressed" = "#db2777"
+"button.accent.text" = "#ffffff"
+"progress.bar" = "#ff66b2"
+"progress.track" = "#140a1c"
+"focus.ring" = "#ff66b2"
+"selection.text" = "#ffffff"
+"chip.web" = "#3b1140"
+"chip.torrent" = "#2e1065"
+"chip.text" = "#fdf4ff"

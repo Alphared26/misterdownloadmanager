@@ -1,0 +1,85 @@
+# Steampunk: Victorian industrial brass, copper bevels, and warm vacuum-tube amber glow.
+# Ideal for mechanical, fantasy, and vintage wallpaper aesthetics.
+
+name = "Steampunk"
+icons = "color"
+icon-set = "luna"
+
+[controls]
+field-focus = "border"
+check = "square"
+button = "luna"
+progress = "gloss"
+scroll = "classic"
+caption = "luna"
+focus = "dotted"
+
+[sizes]
+radius = 3
+"radius.button" = 4
+"radius.part" = 2
+"radius.check" = 1
+"radius.flyout" = 4
+"radius.menu-item" = 3
+"radius.popup" = 4
+"radius.egui" = 3
+border = 1
+"focus-line" = 1
+"list.row" = 20
+"list.header" = 26
+
+[seeds.light]
+background = "#f4efe6"
+surface = "#fffdfa"
+header = "#ece2d0"
+text = "#2c1810"
+accent = "#b45309"
+selection = "#fed7aa"
+error = "#b91c1c"
+warning = "#d97706"
+success = "#15803d"
+
+[seeds.dark]
+background = "#1b140e"
+surface = "#241a12"
+header = "#2d2017"
+text = "#fef3c7"
+accent = "#d4af37"
+selection = "#5c3317"
+error = "#ef4444"
+warning = "#f59e0b"
+success = "#10b981"
+
+[light]
+gloss = "#fef9c3"
+button = "#edd5be"
+"button.hot" = "#fde68a"
+"button.pressed" = "#d97706"
+"button.border" = "#b45309"
+"button.bottom" = "#78350f"
+"button.accent" = "#b45309"
+"button.accent.hot" = "#d97706"
+"button.accent.pressed" = "#78350f"
+"button.accent.text" = "#ffffff"
+"progress.bar" = "#d97706"
+"progress.track" = "#fef3c7"
+"focus.ring" = "#b45309"
+
+[dark]
+gloss = "#fef08a"
+button = "#382315"
+"button.hot" = "#4d301d"
+"button.pressed" = "#27170c"
+"button.border" = "#b45309"
+"button.bottom" = "#d4af37"
+"button.accent" = "#d4af37"
+"button.accent.hot" = "#fbbf24"
+"button.accent.pressed" = "#b45309"
+"button.accent.text" = "#1c1108"
+"progress.bar" = "#f59e0b"
+"progress.track" = "#130d09"
+"focus.ring" = "#d4af37"
+"meter.fill" = "#f59e0b"
+"meter.track" = "#130d09"
+"meter.edge" = "#d4af37"
+"selection.text" = "#ffffff"

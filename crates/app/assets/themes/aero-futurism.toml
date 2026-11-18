@@ -1,0 +1,85 @@
+# Aero-Futurism: Frutiger Aero glossy translucency meets cyber futuristic neon.
+# Specially crafted for transparent wallpaper backdrops with cyan/emerald glowing accents.
+
+name = "Aero-Futurism"
+icons = "color"
+icon-set = "aero"
+
+[controls]
+field-focus = "border"
+check = "aero"
+button = "aero"
+progress = "gloss"
+scroll = "overlay"
+caption = "aero"
+focus = "ring"
+
+[sizes]
+radius = 6
+"radius.button" = 7
+"radius.part" = 4
+"radius.check" = 3
+"radius.flyout" = 8
+"radius.menu-item" = 4
+"radius.popup" = 8
+"radius.egui" = 6
+border = 1
+"focus-line" = 2
+"list.row" = 20
+"list.header" = 26
+
+[seeds.light]
+background = "#eef7fc"
+surface = "#ffffff"
+header = "#e1f0fa"
+text = "#0a192f"
+accent = "#0284c7"
+selection = "#bae6fd"
+error = "#e11d48"
+warning = "#d97706"
+success = "#059669"
+
+[seeds.dark]
+background = "#0b1523"
+surface = "#0f1f33"
+header = "#12253d"
+text = "#f0fdfa"
+accent = "#00e5ff"
+selection = "#0369a1"
+error = "#fb7185"
+warning = "#fbbf24"
+success = "#00ff88"
+
+[light]
+gloss = "#ffffff"
+button = "#dcecf7"
+"button.hot" = "#bfe4fc"
+"button.pressed" = "#9bd5fa"
+"button.border" = "#38bdf8"
+"button.bottom" = "#0284c7"
+"button.accent" = "#0284c7"
+"button.accent.hot" = "#0ea5e9"
+"button.accent.pressed" = "#0369a1"
+"button.accent.text" = "#ffffff"
+"progress.bar" = "#00ff88"
+"progress.track" = "#e0f2fe"
+"focus.ring" = "#0284c7"
+
+[dark]
+gloss = "#80f5ff"
+button = "#162c46"
+"button.hot" = "#1e4066"
+"button.pressed" = "#0c1f33"
+"button.border" = "#00f0ff"
+"button.bottom" = "#00b4d8"
+"button.accent" = "#00e5ff"
+"button.accent.hot" = "#38bdf8"
+"button.accent.pressed" = "#0284c7"
+"button.accent.text" = "#050b14"
+"progress.bar" = "#00ff88"
+"progress.track" = "#081320"
+"focus.ring" = "#00e5ff"
+"meter.fill" = "#00ff88"
+"meter.track" = "#081320"
+"meter.edge" = "#00e5ff"
+"selection.text" = "#ffffff"

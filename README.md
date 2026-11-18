@@ -63,6 +63,64 @@
 | 🚀 [Download](#download) | ⚡ [Why switch](#why-switch-from-idm) | 🖼️ [Screenshots](#screenshots) | ✨ [Getting started](docs/getting-started.md) | 📜 [Help and tutorials](docs/README.md) |
 | --- | --- | --- | --- | --- |
 
+---
+
+## ⚡ Alphared26 Custom Edition Highlights
+
+Edisi khusus Mister Download Manager ini menghadirkan perombakan visual dan fitur produktivitas baru yang membuat pengalaman mengunduh jauh lebih segar, modern, dan futuristik:
+
+### 🎨 3 Tema Baru Eksklusif
+Tersedia langsung di menu **View → Theme**:
+1. **Aero-Futurism (Default Aktif):**  
+   Perpaduan estetika *Frutiger Aero glossy translucency* dengan aksen neon cyber cyan (`#00e5ff`) dan meter progres download zamrud neon (`#00ff88`). Memberikan tampilan modern, bersih, dan futuristik.
+2. **Anime / Wibu (Sakura Cyber):**  
+   Tema bertema Sakura cyberpunk dan amethyst hologram (`#ff66b2`, `#c084fc`, `#701a75`). Didesain khusus agar teks dan kontrol UI tetap berbobot dan kontras tinggi saat dipadukan dengan wallpaper anime kesukaanmu.
+3. **Steampunk:**  
+   Nuansa era industri Victoria dengan kontrol kuningan (*brass* `#d4af37`), tembaga (*copper* `#f59e0b`), dan latar gelap bertekstur tabung vakum hangat.
+
+---
+
+### 🖼️ Custom Wallpaper & Glass Translucency
+- Pasang wallpaper desktop atau gambar favorit langsung di belakang jendela utama MDM lewat menu **View → Wallpaper → Choose a picture...** (mendukung `.jpg`, `.png`, `.webp`).
+- Dilengkapi peredupan otomatis dan kartu kontrol transparan (*glass card effect*) sehingga teks dan progres unduhan selalu terbaca tajam dan tidak tertutupi oleh background.
+
+---
+
+### ⏱️ Always-on-Top Mini Progress Pop-up
+- Pop-up pemantau unduhan mini yang selalu berada di posisi paling atas (*Always on Top*), sangat praktis untuk memantau status download saat kamu sedang bermain game layar penuh (*fullscreen*) atau menonton video/film.
+- **Shortcut:** Tekan **`Ctrl + Shift + P`** untuk membuka/menutup pop-up ini kapan saja, atau melalui menu **Tasks → Watch progress (mini pop-up)**.
+- **3 Gaya Visual Pengukur (Gauge):**
+  - **Speedometer:** Jarum dial analog 0–100 Mbps bergaya speedometer mobil sport.
+  - **Ring:** Cincin progres melingkar dengan persentase besar di tengah.
+  - **Slim Bar:** Bar minimalis horizontal hemat ruang.
+  *(Pilihan gaya dapat diatur lewat menu **Options → Downloads → Customize "Download progress" dialog**)*.
+
+---
+
+### 📥 Enhanced Social Media Video Downloader
+- Integrasi otomatis pengambilan video dari berbagai platform media sosial populer (Instagram Reels/Stories, TikTok, Twitter/X, YouTube).
+- Menyediakan dialog cepat pemilihan resolusi dan audio tanpa ribet.
+
+---
+
+### ⌨️ Panduan Shortcut Keyboard (Cheatsheet)
+
+| Shortcut | Aksi / Fungsi |
+| :--- | :--- |
+| **`Ctrl + Shift + P`** | **Buka / Tutup Mini Progress Pop-up (Always on Top gauge)** |
+| **`Ctrl + F`** | Cari unduhan di daftar (*Find*) |
+| **`F3`** | Lanjutkan pencarian ke item berikutnya (*Find Next*) |
+| **`Ctrl + A`** | Pilih semua unduhan dalam daftar (*Select All*) |
+| **`Space` / `Enter`** | Mulai unduh / Jeda / Buka file yang dipilih |
+| **`Delete`** | Hapus item unduhan yang dipilih dari daftar |
+| **`Shift + Delete`** | Hapus item unduhan **sekaligus menghapus file fisiknya dari disk** |
+| **`Shift + F10`** atau **`Menu`** | Buka menu klik-kanan / context menu pada tab atau item |
+| **`Esc`** | Batal / Tutup dialog pop-up |
+| **`Ctrl + 0`** | Reset ukuran tampilan (*Interface zoom*) ke 100% |
+| **`Ctrl + +` / `Ctrl + -`** | Perbesar / Perkecil ukuran antarmuka UI |
+
+---
+
 ## Why switch from IDM?
 
 **Same window you know. Your downloads finish sooner. And it costs nothing.**

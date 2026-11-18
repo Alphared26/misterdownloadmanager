@@ -462,7 +462,7 @@ impl Default for Settings {
             view: None,
             dark_mode_support: true,
             always_dark: false,
-            theme: "classic".into(),
+            theme: "aero-futurism".into(),
             wallpaper_on: false,
             wallpaper_path: String::new(),
             wallpaper_alpha: crate::wallpaper::Wallpaper::PANEL_ALPHA,
